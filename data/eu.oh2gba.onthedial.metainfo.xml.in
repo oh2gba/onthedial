@@ -34,6 +34,9 @@
   <categories><category>HamRadio</category><category>Network</category></categories>
   <keywords><keyword>shortwave</keyword><keyword>SWL</keyword><keyword>rigctld</keyword><keyword>EiBi</keyword></keywords>
   <releases>
+    <release version="1.0.2" date="2026-09-20">
+      <description><p>Builds cleanly against Qt 6.10 and newer.</p></description>
+    </release>
     <release version="1.0.1" date="2026-09-20">
       <description>
         <ul>
