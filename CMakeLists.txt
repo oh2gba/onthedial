@@ -13,6 +13,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 option(OTD_BUILD_TESTS "Build unit tests" ON)
+# Desktop entry / icon name. Flatpak builds pass the reverse-DNS id.
+set(OTD_DESKTOP_ID "otd" CACHE STRING "Name of the installed .desktop file and icon")
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Sql)
 
@@ -58,6 +60,12 @@ add_executable(otd WIN32 MACOSX_BUNDLE
   src/app/resources.qrc
 )
 target_link_libraries(otd PRIVATE otd_core Qt6::Widgets Qt6::Gui)
+set_target_properties(otd PROPERTIES
+  MACOSX_BUNDLE_BUNDLE_NAME "On The Dial"
+  MACOSX_BUNDLE_GUI_IDENTIFIER "eu.oh2gba.onthedial"
+  MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+  MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+  MACOSX_BUNDLE_COPYRIGHT "GPL-3.0-or-later")
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(otd_core PRIVATE -Wall -Wextra)
@@ -70,9 +78,15 @@ install(TARGETS otd
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   BUNDLE DESTINATION .)
 if(UNIX AND NOT APPLE)
-  install(FILES data/otd.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
-  install(FILES data/otd.svg
+  configure_file(data/otd.desktop.in ${CMAKE_BINARY_DIR}/${OTD_DESKTOP_ID}.desktop @ONLY)
+  configure_file(data/eu.oh2gba.onthedial.metainfo.xml.in
+    ${CMAKE_BINARY_DIR}/eu.oh2gba.onthedial.metainfo.xml @ONLY)
+  install(FILES ${CMAKE_BINARY_DIR}/${OTD_DESKTOP_ID}.desktop
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+  install(FILES data/otd.svg RENAME ${OTD_DESKTOP_ID}.svg
     DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
+  install(FILES ${CMAKE_BINARY_DIR}/eu.oh2gba.onthedial.metainfo.xml
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
 endif()
 
 # ---- tests --------------------------------------------------------------

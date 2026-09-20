@@ -11,7 +11,7 @@ mkdir -p dist
 docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD":/src -w /src "$IMAGE" bash -c "
   set -e
   cmake -S . -B build-appimage -G Ninja -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_PREFIX_PATH=\$QT_DIR -DONTHEDIAL_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=/usr
+        -DCMAKE_PREFIX_PATH=\$QT_DIR -DOTD_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=/usr
   cmake --build build-appimage
   rm -rf build-appimage/AppDir
   DESTDIR=build-appimage/AppDir cmake --install build-appimage

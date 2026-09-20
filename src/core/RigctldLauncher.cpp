@@ -34,7 +34,14 @@ QString RigctldLauncher::defaultPath()
 #endif
     if (QFileInfo::exists(bundled))
         return bundled;
-    const QString inPath = QStandardPaths::findExecutable(exe);
+    QString inPath = QStandardPaths::findExecutable(exe);
+    if (inPath.isEmpty())
+    {
+        // GUI apps on macOS do not see Homebrew's PATH; Flatpak keeps it in /app.
+        const QStringList extra = {QStringLiteral("/opt/homebrew/bin"), QStringLiteral("/usr/local/bin"),
+                                   QStringLiteral("/app/bin")};
+        inPath = QStandardPaths::findExecutable(exe, extra);
+    }
     return inPath.isEmpty() ? exe : inPath;
 }
 

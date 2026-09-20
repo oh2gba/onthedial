@@ -1,0 +1,54 @@
+# Flatpak manifest for On The Dial. Build locally with:
+#   flatpak-builder --user --install --force-clean build-flatpak flatpak/eu.oh2gba.onthedial.yml
+# For Flathub the "sources" of the last module point at a release tag.
+app-id: eu.oh2gba.onthedial
+runtime: org.kde.Platform
+runtime-version: '6.8'
+sdk: org.kde.Sdk
+command: otd
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  - --share=network          # rigctld on the network and schedule downloads
+  - --device=all             # serial ports when rigctld is started from inside
+cleanup:
+  - /include
+  - /lib/pkgconfig
+  - /share/man
+  - /share/aclocal
+  - '*.la'
+  - '*.a'
+modules:
+  - name: hamlib
+    buildsystem: autotools
+    config-opts:
+      - --disable-static
+      - --without-cxx-binding
+      - --without-perl-binding
+      - --without-python-binding
+      - --without-tcl-binding
+      - --without-lua-binding
+    cleanup:
+      - /bin/ampctl*
+      - /bin/rigmem
+      - /bin/rigsmtr
+      - /bin/rigswr
+      - /bin/rotctl*
+      - /bin/rigtest*
+    sources:
+      - type: archive
+        url: https://github.com/Hamlib/Hamlib/releases/download/4.7.2/hamlib-4.7.2.tar.gz
+        sha256: ae1fcf2dbc80ea0786ea8f047b09399c3f7737d1930442f61a031708ed33e88f
+
+  - name: onthedial
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DOTD_BUILD_TESTS=OFF
+      - -DOTD_DESKTOP_ID=eu.oh2gba.onthedial
+    sources:
+      - type: git
+        url: https://github.com/oh2gba/onthedial.git
+        tag: v1.0.0

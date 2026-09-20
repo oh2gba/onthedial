@@ -15,6 +15,9 @@ Ready-made builds, no installation needed:
 
 - Windows 10/11 (64-bit): [otd-1.0.0-windows-x64.zip](https://onthedial.oh2gba.eu/downloads/otd-1.0.0-windows-x64.zip), unzip and start `otd.exe`. Hamlib's rigctld is included.
 - Linux (64-bit): [otd-1.0.0-x86_64.AppImage](https://onthedial.oh2gba.eu/downloads/otd-1.0.0-x86_64.AppImage), `chmod +x` and run. Needs the distribution's Hamlib package for rigctld.
+- macOS 12 or newer (Apple Silicon and Intel): `otd-<version>-macos.dmg` from the
+  [GitHub releases](https://github.com/oh2gba/onthedial/releases). The app is not notarized, so on
+  first start right-click it and choose Open. Install rigctld with `brew install hamlib`.
 - Checksums: [SHA256SUMS.txt](https://onthedial.oh2gba.eu/downloads/SHA256SUMS.txt). The same files are attached to the GitHub releases.
 
 How to hook up the radio: <https://onthedial.oh2gba.eu/rig.html>
@@ -105,6 +108,19 @@ exits; it exists for documentation.
 Note for Wayland users: the window size is restored, but a Wayland compositor
 does not let applications choose their position. KWin can remember it for you
 via a window rule for "otd".
+
+## Flatpak
+
+`flatpak/eu.oh2gba.onthedial.yml` builds the app together with Hamlib on the KDE 6.8
+runtime, so rigctld is available inside the sandbox:
+
+```bash
+flatpak-builder --user --install --force-clean build-flatpak flatpak/eu.oh2gba.onthedial.yml
+flatpak run eu.oh2gba.onthedial
+```
+
+The same manifest is what a Flathub submission needs, together with the AppStream
+metainfo in `data/`.
 
 ## Web page and source
 

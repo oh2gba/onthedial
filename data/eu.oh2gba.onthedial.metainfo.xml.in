@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>eu.oh2gba.onthedial</id>
+  <launchable type="desktop-id">@OTD_DESKTOP_ID@.desktop</launchable>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>On The Dial</name>
+  <developer id="eu.oh2gba"><name>John, OH2GBA</name></developer>
+  <summary>Who is on the shortwave frequency you are tuned to</summary>
+  <description>
+    <p>On The Dial follows the VFO of your receiver through Hamlib's rigctld and shows which
+       shortwave stations are scheduled on or near that frequency right now: broadcasters,
+       utility stations, time signals and oddities such as The Buzzer.</p>
+    <ul>
+      <li>Live on-air status from the EiBi, HFCC and Aoki schedules, evaluated against UTC</li>
+      <li>Follows the rig, or type a frequency; double-click a station to tune there</li>
+      <li>Search the whole database by station, language, site or country</li>
+      <li>Mode column: AM, USB, LSB, CW, DRM, RTTY, FAX, HFDL</li>
+      <li>Your own list of identifications, with import and export</li>
+      <li>Can start rigctld for you; works with gqrx and SDR++ rigctl servers too</li>
+    </ul>
+  </description>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Stations on air near the tuned frequency</caption>
+      <image>https://onthedial.oh2gba.eu/screenshot.png</image>
+    </screenshot>
+  </screenshots>
+  <url type="homepage">https://onthedial.oh2gba.eu/</url>
+  <url type="help">https://onthedial.oh2gba.eu/rig.html</url>
+  <url type="bugtracker">https://github.com/oh2gba/onthedial/issues</url>
+  <url type="vcs-browser">https://github.com/oh2gba/onthedial</url>
+  <content_rating type="oars-1.1"/>
+  <categories><category>HamRadio</category><category>Network</category></categories>
+  <keywords><keyword>shortwave</keyword><keyword>SWL</keyword><keyword>rigctld</keyword><keyword>EiBi</keyword></keywords>
+  <releases>
+    <release version="@PROJECT_VERSION@" date="2026-09-20"/>
+  </releases>
+</component>

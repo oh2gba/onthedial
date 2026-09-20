@@ -21,7 +21,7 @@ docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD":/src -w /src "$IMA
   cmake -S . -B build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_TOOLCHAIN_FILE=/opt/mingw-toolchain.cmake \
         -DCMAKE_PREFIX_PATH=\$QT_TARGET -DQT_HOST_PATH=\$QT_HOST \
-        -DONTHEDIAL_BUILD_TESTS=OFF
+        -DOTD_BUILD_TESTS=OFF
   cmake --build build-windows
 
   PKG=build-windows/pkg/otd
