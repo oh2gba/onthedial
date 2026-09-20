@@ -11,13 +11,13 @@ time signals, and oddities such as *The Buzzer* on 4625 kHz.
 
 ## Download
 
-Ready-made builds, no installation needed:
+Ready-made builds from the [GitHub releases](https://github.com/oh2gba/onthedial/releases), always the newest version, no installation needed:
 
-- Windows 10/11 (64-bit): [otd-1.0.1-windows-x64.zip](https://onthedial.oh2gba.eu/downloads/otd-1.0.1-windows-x64.zip), unzip and start `otd.exe`. Hamlib's rigctld is included.
-- Linux (64-bit): [otd-1.0.1-x86_64.AppImage](https://onthedial.oh2gba.eu/downloads/otd-1.0.1-x86_64.AppImage), `chmod +x` and run. Needs the distribution's Hamlib package for rigctld.
-- macOS 12 or newer (Apple Silicon and Intel): [otd-1.0.1-macos.dmg](https://onthedial.oh2gba.eu/downloads/otd-1.0.1-macos.dmg).
+- Windows 10/11 (64-bit): [otd-windows-x64.zip](https://github.com/oh2gba/onthedial/releases/latest/download/otd-windows-x64.zip), unzip and start `otd.exe`. Hamlib's rigctld is included.
+- Linux (64-bit): [otd-x86_64.AppImage](https://github.com/oh2gba/onthedial/releases/latest/download/otd-x86_64.AppImage), `chmod +x` and run. Needs the distribution's Hamlib package for rigctld.
+- macOS 12 or newer (Apple Silicon and Intel): [otd-macos.dmg](https://github.com/oh2gba/onthedial/releases/latest/download/otd-macos.dmg).
   The app is not notarized, so on first start right-click it and choose Open. Install rigctld with `brew install hamlib`.
-- Checksums: [SHA256SUMS.txt](https://onthedial.oh2gba.eu/downloads/SHA256SUMS.txt). The same files are attached to the GitHub releases.
+- Checksums: [SHA256SUMS.txt](https://github.com/oh2gba/onthedial/releases/latest/download/SHA256SUMS.txt). All versions: [releases](https://github.com/oh2gba/onthedial/releases).
 
 How to hook up the radio: <https://onthedial.oh2gba.eu/rig.html>
 

@@ -72,7 +72,12 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      - run: cd dist && sha256sum * > SHA256SUMS.txt
+      - name: Version-free file names, so /releases/latest/download/ links stay valid
+        run: |
+          cd dist
+          for f in otd-*; do mv "$f" "$(echo "$f" | sed -E 's/^otd-[0-9.]+-/otd-/')"; done
+          sha256sum * > SHA256SUMS.txt
+          ls -la
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/*

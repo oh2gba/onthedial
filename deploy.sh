@@ -2,11 +2,8 @@
 # Upload ./site to the project web page over FTP with explicit TLS.
 # Credentials come from ./.env (git-ignored):
 #   FTP_HOST, FTP_USER, FTP_PASS, SITE_HOST and optionally FTP_DIR.
-# The binaries in site/downloads/ are only sent with --with-downloads.
 set -euo pipefail
 cd "$(dirname "$0")"
-WITH_DOWNLOADS=0
-[ "${1:-}" = "--with-downloads" ] && WITH_DOWNLOADS=1
 
 if [ ! -f .env ]; then
   echo ".env with FTP_HOST/FTP_USER/FTP_PASS is missing" >&2
@@ -29,7 +26,6 @@ printf 'machine %s login %s password %s\n' "$FTP_HOST" "$FTP_USER" "$FTP_PASS" >
 cd site
 find . -type f | sort | while read -r f; do
   rel="${f#./}"
-  case "$rel" in downloads/*) [ $WITH_DOWNLOADS = 1 ] || continue ;; esac
   echo "  $rel"
   curl --silent --show-error --ssl-reqd --netrc-file "$NETRC" --ftp-create-dirs \
        -T "$f" "ftp://$FTP_HOST/$FTP_DIR${FTP_DIR:+/}$rel"

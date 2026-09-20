@@ -15,6 +15,6 @@ builddir/
 data-local/
 dist/
 eu.oh2gba.onthedial.local.yml
+private/
 repo-flatpak/
 repo/
-site/downloads/
