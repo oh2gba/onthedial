@@ -57,14 +57,15 @@
     <tr><td>Linux, 64-bit</td>
         <td><a href="downloads/otd-1.0.0-x86_64.AppImage">otd-1.0.0-x86_64.AppImage</a> (32 MB)</td>
         <td>Make it executable (<code>chmod +x</code>) and run it. Works on distributions from 2022 on (glibc 2.35). Install <code>libhamlib-utils</code> or <code>hamlib</code> for rigctld.</td></tr>
-    <tr><td>macOS</td><td>not yet</td><td>Build from source with Qt 6 and CMake, or wait for the GitHub release.</td></tr>
+    <tr><td>macOS</td><td>not yet</td><td>Build from source with Qt 6 and CMake.</td></tr>
   </table>
   <p class="note">SHA-256 checksums: <a href="downloads/SHA256SUMS.txt">SHA256SUMS.txt</a>. Windows may warn about an unknown
      publisher because the program is not code-signed; that is expected for a hobby project.</p>
 
   <h2>Build it yourself</h2>
-  <p>On The Dial is free software under the GNU GPL v3. The source code will be published on GitHub shortly.
-     Building needs nothing but Docker:</p>
+  <p>On The Dial is free software under the GNU GPL v3. The source code is at
+     <a href="https://github.com/oh2gba/onthedial">github.com/oh2gba/onthedial</a>, where the same downloads are
+     attached to each release. Building needs nothing but Docker:</p>
 <pre><code>git clone https://github.com/oh2gba/onthedial.git
 cd onthedial
 ./build.sh            # builds and runs the tests inside a container

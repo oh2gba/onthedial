@@ -106,7 +106,10 @@ Note for Wayland users: the window size is restored, but a Wayland compositor
 does not let applications choose their position. KWin can remember it for you
 via a window rule for "otd".
 
-## Web page
+## Web page and source
+
+Source code: <https://github.com/oh2gba/onthedial>
+
 
 The project page lives at <https://onthedial.oh2gba.eu/>. Its files are in
 `site/` and `./deploy.sh` uploads them over FTP with TLS. The credentials are
