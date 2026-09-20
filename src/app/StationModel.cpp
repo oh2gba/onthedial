@@ -1,0 +1,267 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#include "StationModel.h"
+#include "core/StationDb.h"
+
+#include <QBrush>
+#include <QColor>
+#include <QFont>
+#include <QGuiApplication>
+#include <QPalette>
+#include <algorithm>
+
+StationModel::StationModel(StationDb* db, QObject* parent)
+    : QAbstractTableModel(parent)
+    , m_db(db)
+{
+}
+
+int StationModel::rank(Schedule::OnAir s)
+{
+    switch (s)
+    {
+    case Schedule::OnAir::Yes:      return 0;
+    case Schedule::OnAir::Unknown:  return 1;
+    case Schedule::OnAir::No:       return 2;
+    case Schedule::OnAir::Inactive: return 3;
+    }
+    return 4;
+}
+
+void StationModel::setEntries(const StationList& entries, double centreKHz)
+{
+    beginResetModel();
+    m_centre = centreKHz;
+    m_rows.clear();
+    m_rows.reserve(entries.size());
+    m_lastEval = QDateTime::currentDateTimeUtc();
+    for (const StationEntry& e : entries)
+    {
+        Row r;
+        r.entry = e;
+        r.delta = e.kHz - centreKHz;
+        r.status = Schedule::status(e, m_lastEval);
+        m_rows.push_back(r);
+    }
+    sortRows();
+    endResetModel();
+}
+
+void StationModel::setCentre(double centreKHz)
+{
+    if (qFuzzyCompare(centreKHz, m_centre))
+        return;
+    m_centre = centreKHz;
+    for (Row& r : m_rows)
+        r.delta = r.entry.kHz - centreKHz;
+    if (!m_rows.isEmpty())
+        emit dataChanged(index(0, ColDelta), index(m_rows.size() - 1, ColDelta));
+}
+
+void StationModel::refreshStatus(const QDateTime& utc)
+{
+    m_lastEval = utc;
+    bool changed = false;
+    for (Row& r : m_rows)
+    {
+        const Schedule::OnAir s = Schedule::status(r.entry, utc);
+        if (s != r.status)
+        {
+            r.status = s;
+            changed = true;
+        }
+    }
+    if (!changed)
+        return;
+    beginResetModel();
+    sortRows();
+    endResetModel();
+}
+
+int StationModel::onAirCount() const
+{
+    return int(std::count_if(m_rows.cbegin(), m_rows.cend(), [](const Row& r) {
+        return r.status == Schedule::OnAir::Yes;
+    }));
+}
+
+void StationModel::sortRows()
+{
+    std::stable_sort(m_rows.begin(), m_rows.end(), [](const Row& a, const Row& b) {
+        const int ra = rank(a.status), rb = rank(b.status);
+        if (ra != rb)
+            return ra < rb;
+        const double da = qAbs(a.delta), db = qAbs(b.delta);
+        if (!qFuzzyCompare(da + 1.0, db + 1.0))
+            return da < db;
+        if (a.entry.startMin != b.entry.startMin)
+            return a.entry.startMin < b.entry.startMin;
+        return a.entry.station < b.entry.station;
+    });
+}
+
+int StationModel::rowCount(const QModelIndex& parent) const
+{
+    return parent.isValid() ? 0 : m_rows.size();
+}
+
+int StationModel::columnCount(const QModelIndex& parent) const
+{
+    return parent.isValid() ? 0 : ColumnCount;
+}
+
+QVariant StationModel::headerData(int section, Qt::Orientation o, int role) const
+{
+    if (o != Qt::Horizontal || role != Qt::DisplayRole)
+        return QVariant();
+    switch (section)
+    {
+    case ColDelta:     return tr("Δ kHz");
+    case ColFrequency: return tr("kHz");
+    case ColStatus:    return tr("Status");
+    case ColMode:      return tr("Mode");
+    case ColStation:   return tr("Station");
+    case ColLanguage:  return tr("Language");
+    case ColTime:      return tr("UTC");
+    case ColDays:      return tr("Days");
+    case ColCountry:   return tr("Country");
+    case ColSite:      return tr("Transmitter");
+    case ColTarget:    return tr("Target");
+    case ColLastHeard: return tr("Heard");
+    case ColSource:    return tr("Source");
+    case ColRemarks:   return tr("Remarks");
+    }
+    return QVariant();
+}
+
+QString StationModel::sourceLabel(const QString& id)
+{
+    if (id == QLatin1String("eibi")) return QStringLiteral("EiBi");
+    if (id == QLatin1String("hfcc")) return QStringLiteral("HFCC");
+    if (id == QLatin1String("aoki")) return QStringLiteral("Aoki");
+    if (id == userSourceId())        return tr("Mine");
+    return id.toUpper();
+}
+
+QString StationModel::languageOf(const StationEntry& e) const
+{
+    if (!e.langText.isEmpty())
+        return e.langText;
+    const QString name = m_db->languageName(e.lang);
+    const int colon = name.indexOf(QLatin1Char(':'));
+    return colon > 0 ? name.left(colon) : name;
+}
+
+QString StationModel::siteOf(const StationEntry& e) const
+{
+    return e.siteText.isEmpty() ? m_db->siteName(e.itu, e.site) : e.siteText;
+}
+
+QString StationModel::tooltip(const Row& r) const
+{
+    const StationEntry& e = r.entry;
+    QString t = QStringLiteral("<b>%1</b><br>%2 kHz, %3 UTC")
+                    .arg(e.station.toHtmlEscaped())
+                    .arg(e.kHz, 0, 'f', e.kHz == qRound(e.kHz) ? 0 : 3)
+                    .arg(Schedule::timeWindow(e));
+    if (!e.days.isEmpty())
+        t += tr("<br>Days: %1").arg(e.days.toHtmlEscaped());
+    const QString lang = e.langText.isEmpty() ? m_db->languageName(e.lang) : e.langText;
+    if (!lang.isEmpty())
+        t += tr("<br>Language: %1").arg(lang.toHtmlEscaped());
+    if (!e.mode.isEmpty())
+        t += tr("<br>Mode: %1").arg(e.mode);
+    t += tr("<br>Country: %1").arg(m_db->countryName(e.itu).toHtmlEscaped());
+    const QString site = siteOf(e);
+    if (!site.isEmpty())
+        t += tr("<br>Transmitter: %1").arg(site.toHtmlEscaped());
+    if (!e.target.isEmpty())
+        t += tr("<br>Target: %1").arg(m_db->targetName(e.target).toHtmlEscaped());
+    if (!e.remarks.isEmpty())
+        t += tr("<br>Remarks: %1").arg(e.remarks.toHtmlEscaped());
+    if (!e.startDate.isEmpty() || !e.stopDate.isEmpty())
+        t += tr("<br>Valid: %1 - %2").arg(e.startDate, e.stopDate);
+    if (!e.lastHeard.isEmpty())
+        t += tr("<br>Last heard: %1/20%2").arg(e.lastHeard.left(2), e.lastHeard.mid(2));
+    t += tr("<br>Source: %1, status: %2").arg(sourceLabel(e.source), Schedule::statusText(r.status));
+    return t;
+}
+
+QVariant StationModel::data(const QModelIndex& index, int role) const
+{
+    if (!index.isValid() || index.row() >= m_rows.size())
+        return QVariant();
+    const Row& r = m_rows[index.row()];
+    const StationEntry& e = r.entry;
+
+    switch (role)
+    {
+    case Qt::DisplayRole:
+        switch (index.column())
+        {
+        case ColDelta:
+        {
+            if (qFuzzyIsNull(r.delta))
+                return QStringLiteral("0");
+            return QStringLiteral("%1%2").arg(r.delta > 0 ? QStringLiteral("+") : QString())
+                                          .arg(r.delta, 0, 'f', 1);
+        }
+        case ColFrequency: return QString::number(e.kHz, 'f', e.kHz == qRound(e.kHz) ? 0 : 3);
+        case ColStatus:    return Schedule::statusText(r.status);
+        case ColMode:      return e.mode;
+        case ColStation:   return e.station;
+        case ColLanguage:  return languageOf(e);
+        case ColTime:      return Schedule::timeWindow(e);
+        case ColDays:      return e.days;
+        case ColCountry:   return m_db->countryName(e.itu);
+        case ColSite:      return siteOf(e);
+        case ColTarget:    return e.source == QLatin1String("hfcc") ? e.target
+                                                                    : m_db->targetName(e.target);
+        case ColLastHeard: return e.lastHeard.isEmpty()
+                                  ? QString()
+                                  : QStringLiteral("%1/%2").arg(e.lastHeard.left(2), e.lastHeard.mid(2));
+        case ColSource:    return sourceLabel(e.source);
+        case ColRemarks:   return e.remarks;
+        }
+        return QVariant();
+
+    case Qt::ToolTipRole:
+        return tooltip(r);
+
+    case Qt::TextAlignmentRole:
+        if (index.column() == ColDelta || index.column() == ColFrequency || index.column() == ColTime)
+            return int(Qt::AlignRight | Qt::AlignVCenter);
+        return int(Qt::AlignLeft | Qt::AlignVCenter);
+
+    case Qt::FontRole:
+        if (r.status == Schedule::OnAir::Yes)
+        {
+            QFont f;
+            f.setBold(true);
+            return f;
+        }
+        return QVariant();
+
+    case Qt::ForegroundRole:
+        if (r.status == Schedule::OnAir::No || r.status == Schedule::OnAir::Inactive)
+            return QBrush(QGuiApplication::palette().color(QPalette::Disabled, QPalette::Text));
+        if (r.status == Schedule::OnAir::Yes && index.column() == ColStatus)
+            return QBrush(QColor(0x2e, 0xa0, 0x43));
+        return QVariant();
+
+    case SortRole:
+        switch (index.column())
+        {
+        case ColDelta:     return qAbs(r.delta);
+        case ColFrequency: return e.kHz;
+        case ColStatus:    return rank(r.status);
+        case ColTime:      return e.startMin;
+        default:           return data(index, Qt::DisplayRole);
+        }
+
+    case StatusRole:
+        return int(r.status);
+    case OnAirRankRole:
+        return rank(r.status);
+    }
+    return QVariant();
+}

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connecting your radio · On The Dial</title>
+<meta name="description" content="How On The Dial talks to your receiver: Hamlib rigctld on Linux, Windows and macOS, sharing a radio with QLog, WSJT-X, fldigi, gqrx and SDR++.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <nav><a href="index.html">← On The Dial</a></nav>
+  <header>
+    <h1>Connecting your radio</h1>
+    <p class="tagline">On The Dial does not talk to radios itself. It asks a small helper program, and that helper knows hundreds of radios.</p>
+  </header>
+
+  <h2>The idea in one picture</h2>
+  <pre class="diagram">
+  ┌──────────────┐   USB / serial / LAN   ┌──────────────┐   TCP port 4532   ┌──────────────┐
+  │  your radio  │ ◄────────────────────► │   rigctld    │ ◄───────────────► │  On The Dial │
+  └──────────────┘                        │  (Hamlib)    │ ◄───────────────► │  QLog, WSJT-X│
+                                          └──────────────┘                   │  fldigi, ...  │
+                                                                             └──────────────┘</pre>
+  <p><strong>rigctld</strong> is part of <a href="https://hamlib.github.io/">Hamlib</a>, the free library that knows
+     how to speak to Icom, Yaesu, Kenwood, Elecraft, FlexRadio and many more. It runs in the background, holds the
+     connection to the radio, and offers it to any number of programs on network port <code>4532</code>.
+     On The Dial only ever asks it "what frequency and mode is the VFO on?" and, when you double-click a station,
+     "please tune there".</p>
+  <p>Because the port is just a network connection, the radio can even sit on another computer or a Raspberry Pi in the shack.</p>
+
+  <h2>Option 1: let On The Dial start rigctld</h2>
+  <p>The simplest way if nothing else on your computer uses the radio yet.</p>
+  <ol>
+    <li>Open <em>File → Settings → Radio</em>.</li>
+    <li>Tick <em>Start Hamlib's rigctld when the program starts</em>.</li>
+    <li>Pick your radio from the <em>Rig model</em> list (over 300 entries, sorted by manufacturer).</li>
+    <li>Choose the <em>Device</em> the radio is plugged into: <code>/dev/ttyUSB0</code> on Linux, <code>COM3</code> on Windows,
+        <code>/dev/cu.usbserial-…</code> on macOS. The list shows what is currently plugged in.</li>
+    <li>Set the <em>Baud rate</em> to what the radio's menu says, or leave "rig default".</li>
+    <li>OK. The status bar should say <em>Connected to rigctld</em> and the big digits follow your tuning knob.</li>
+  </ol>
+  <p class="note">On Windows the download includes rigctld, nothing else to install. On Linux install the package
+     <code>libhamlib-utils</code> (Debian, Ubuntu, Mint) or <code>hamlib</code> (Fedora, Arch, openSUSE) first.
+     On macOS: <code>brew install hamlib</code>.</p>
+
+  <h2>Option 2: another program already runs rigctld</h2>
+  <p>If your logger or digital-mode program already controls the radio, do <strong>not</strong> start a second connection
+     to the serial port; two programs cannot share one serial port. Let that program run rigctld and share it.</p>
+
+  <h3>QLog</h3>
+  <p>In <em>Settings → Equipment → Rig</em> edit your rig profile and tick
+     <em>Start rigctld daemon to share rig with other applications</em>. QLog then launches rigctld on port 4532
+     (adjustable) and uses it itself. On The Dial with its default settings will find it right away.</p>
+
+  <h3>WSJT-X and JTDX</h3>
+  <p>These bundle Hamlib but only use it internally. Run rigctld yourself (option 3 below, or via On The Dial), then in
+     WSJT-X choose <em>Settings → Radio → Rig: Hamlib NET rigctl</em> with network server <code>localhost:4532</code>.
+     Now WSJT-X and On The Dial share the radio.</p>
+
+  <h3>fldigi and flrig</h3>
+  <p>fldigi can talk to rigctld directly: <em>Configure → Rig Control → Hamlib</em>, device <code>localhost:4532</code>,
+     rig <em>Hamlib NET rigctl</em>. If you use flrig instead, start rigctld with model 4 (<em>FLRig</em>), which turns flrig
+     into a rigctld source: <code>rigctld -m 4</code>.</p>
+
+  <h3>CQRLOG</h3>
+  <p>CQRLOG starts rigctld by itself (<em>Preferences → TRX control</em>). Enter the same port there and in On The Dial.</p>
+
+  <h3>gqrx and SDR++ (software defined radios)</h3>
+  <p>No Hamlib needed. gqrx has <em>Tools → Remote control</em>, which speaks the same protocol on port <code>7356</code>:
+     enable it and set On The Dial's port to 7356. SDR++ has the <em>Rigctl Server</em> module, default port 4532.
+     Both accept the double-click tuning as well.</p>
+
+  <h3>Anything else that offers "rigctld" or "rigctl server"</h3>
+  <p>If a program can share the rig as rigctld, On The Dial can use it. Only the host and port matter.</p>
+
+  <h2>Option 3: start rigctld by hand</h2>
+  <p>Useful for testing, for a headless computer in the shack, or when you like terminals.</p>
+  <pre><code># list the radios Hamlib knows and their model numbers
+rigctld -l
+
+# Icom IC-7300 on the first USB serial port at 115200 baud
+rigctld -m 3073 -r /dev/ttyUSB0 -s 115200
+
+# Yaesu FT-991 on Windows, COM5
+rigctld.exe -m 1035 -r COM5 -s 38400
+
+# Kenwood TS-590SG on macOS
+rigctld -m 2031 -r /dev/cu.usbserial-1420 -s 115200
+
+# a radio with a LAN interface (Flex, Icom IC-705 over Wi-Fi, ...)
+rigctld -m 2 -r 192.168.1.50:4532      # "NET rigctl": chain to another rigctld
+
+# no radio at all, just to try the program
+rigctld -m 1</code></pre>
+  <p>Leave that window open. Then start On The Dial. To let another computer connect add <code>-T 0.0.0.0</code>
+     and use that computer's address in <em>Settings → Radio → Host</em>.</p>
+
+  <h2>When it does not work</h2>
+  <table>
+    <tr><th>Symptom</th><th>What to check</th></tr>
+    <tr><td>Status bar says <em>Connection refused</em></td><td>rigctld is not running, or runs on another port. Start it (option 1 or 3) or check the port in the other program.</td></tr>
+    <tr><td>rigctld starts and exits at once</td><td>Wrong device name, or the port is already in use by another program. On Linux also make sure your user may open serial ports: <code>sudo usermod -aG dialout $USER</code>, then log out and in.</td></tr>
+    <tr><td>Connected, but frequency stays at ---</td><td>Wrong baud rate or CAT disabled in the radio's menu. Try <code>rigctl -m &lt;model&gt; -r &lt;device&gt; -s &lt;baud&gt; f</code> in a terminal until it prints a frequency.</td></tr>
+    <tr><td>Icom radios: rigctld complains about the CI-V address</td><td>Add <code>--civaddr=0x94</code> (the address from the radio's menu) to <em>Extra arguments</em>.</td></tr>
+    <tr><td>Frequency is right, station list is empty</td><td>Nothing is scheduled within the ± range, or the databases have not been downloaded yet. See the status bar on the right.</td></tr>
+    <tr><td>Double-click does not tune</td><td>Some SDR programs only accept commands when their remote control allows it (gqrx: <em>Remote control → Allow control</em>).</td></tr>
+  </table>
+
+  <footer>
+    <a href="index.html">Back to On The Dial</a> · Questions: <a href="mailto:john@oh2gba.eu">john@oh2gba.eu</a>
+  </footer>
+</main>
+</body>
+</html>

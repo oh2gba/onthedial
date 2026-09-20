@@ -1,0 +1,13 @@
+build/
+build-*/
+*.user
+.cache/
+data-local/
+
+# secrets
+.env
+.env.*
+dist/
+build-appimage/
+build-windows/
+site/downloads/

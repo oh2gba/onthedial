@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>On The Dial</title>
+<meta name="description" content="On The Dial (otd) shows which shortwave stations are scheduled on the frequency your receiver is tuned to. Follows your rig through Hamlib rigctld. Linux, Qt, open source.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">
+      <img src="favicon.svg" alt="">
+      <h1>On The Dial <small>otd</small></h1>
+    </div>
+    <p class="tagline">Who is on the frequency I am tuned to?</p>
+    <p class="freq">6 676.000 kHz <span>Bangkok Volmet · on air · USB · Thailand</span></p>
+    <p>On The Dial is a small desktop program for shortwave listeners. It follows the VFO of your
+       receiver through Hamlib's <code>rigctld</code> and shows which stations are scheduled on or near
+       that frequency right now: broadcasters, utility stations, time signals, and oddities such as
+       <em>The Buzzer</em> on 4625&nbsp;kHz.</p>
+    <p><a href="rig.html">How to connect your radio →</a></p>
+  </header>
+
+  <a class="shot" href="screenshot-full.png" id="shot" title="Click to enlarge"><img src="screenshot.png" alt="On The Dial following a receiver tuned to 6671.88 kHz, listing the Volmet stations on air"></a>
+  <div class="lightbox" id="lightbox" hidden><img src="screenshot-full.png" alt=""></div>
+
+  <h2>What it does</h2>
+  <div class="grid">
+    <div class="card"><h3>Follows your rig</h3><p>Connects to rigctld on port 4532, reconnects by itself, and shows the tuned frequency and mode in large digits.</p></div>
+    <div class="card"><h3>Knows who is on air</h3><p>Every entry is checked against UTC: time window, weekday rules, validity dates, summer and winter seasons. On-air stations are listed first.</p></div>
+    <div class="card"><h3>Three schedule databases</h3><p>EiBi, HFCC and the Aoki list side by side, each switchable, cached locally and refreshed at most once a week.</p></div>
+    <div class="card"><h3>Search anywhere</h3><p>Type "buzzer" and see where it is, on-air hits first with the distance from your VFO. Double-click a row to tune the rig there.</p></div>
+    <div class="card"><h3>Mode column</h3><p>AM, USB, LSB, CW, DRM, RTTY, FAX or HFDL, derived from the markers in each source.</p></div>
+    <div class="card"><h3>Your own list</h3><p>Heard something the lists do not know? Add it with a note, it shows up like any other entry and can be exported. A right-click opens the Signal Identification Wiki for the mode or the station.</p></div>
+    <div class="card"><h3>Small and self-contained</h3><p>C++ and Qt 6, a single binary of a few hundred kilobytes, one SQLite file for schedules and settings. No hamlib dependency.</p></div>
+  </div>
+
+  <h2>Schedule data</h2>
+  <p>On The Dial would be nothing without the people who compile these lists. Thank you.</p>
+  <table>
+    <tr><th>Source</th><th>Notes</th></tr>
+    <tr><td><a href="http://www.eibispace.de/">EiBi</a> by Eike Bierwirth</td><td>Broadcast and utility schedule, free for use in third-party software.</td></tr>
+    <tr><td><a href="http://www.hfcc.org/data/">HFCC</a> public data</td><td>Official broadcaster registrations per season.</td></tr>
+    <tr><td>Aoki / Bi Newsletter (<a href="http://www1.s2.starcat.ne.jp/ndxc/">NDXC</a>)</td><td>The well known frequency list from the Nagoya DXers Circle.</td></tr>
+  </table>
+
+  <h2>Download</h2>
+  <p>Version 1.0.0, built 2026-09-20. No installation needed.</p>
+  <table>
+    <tr><th>Platform</th><th>File</th><th>How to run</th></tr>
+    <tr><td>Windows 10/11, 64-bit</td>
+        <td><a href="downloads/otd-1.0.0-windows-x64.zip">otd-1.0.0-windows-x64.zip</a> (16 MB)</td>
+        <td>Unzip anywhere, start <code>otd.exe</code>. Hamlib's rigctld is included, see <a href="rig.html">Connecting your radio</a>.</td></tr>
+    <tr><td>Linux, 64-bit</td>
+        <td><a href="downloads/otd-1.0.0-x86_64.AppImage">otd-1.0.0-x86_64.AppImage</a> (32 MB)</td>
+        <td>Make it executable (<code>chmod +x</code>) and run it. Works on distributions from 2022 on (glibc 2.35). Install <code>libhamlib-utils</code> or <code>hamlib</code> for rigctld.</td></tr>
+    <tr><td>macOS</td><td>not yet</td><td>Build from source with Qt 6 and CMake, or wait for the GitHub release.</td></tr>
+  </table>
+  <p class="note">SHA-256 checksums: <a href="downloads/SHA256SUMS.txt">SHA256SUMS.txt</a>. Windows may warn about an unknown
+     publisher because the program is not code-signed; that is expected for a hobby project.</p>
+
+  <h2>Build it yourself</h2>
+  <p>On The Dial is free software under the GNU GPL v3. The source code will be published on GitHub shortly.
+     Building needs nothing but Docker:</p>
+<pre><code>git clone https://github.com/oh2gba/onthedial.git
+cd onthedial
+./build.sh            # builds and runs the tests inside a container
+./build/otd           # follow rigctld on localhost:4532
+./package-linux.sh    # AppImage into dist/
+./package-windows.sh  # Windows zip into dist/ (cross-compiled)</code></pre>
+  <p>Useful options: <code>--frequency 4625</code> starts in manual mode at a frequency,
+     <code>--data-dir ~/otd</code> keeps everything in one directory.</p>
+
+  <h2>Requirements</h2>
+  <ul>
+    <li>A receiver or transceiver supported by <a href="https://hamlib.github.io/">Hamlib</a>, or an SDR program
+        with a rigctl server such as gqrx or SDR++. See <a href="rig.html">Connecting your radio</a>.
+        Without a rig you can type frequencies by hand.</li>
+    <li>Linux with Qt 6.8 runtime libraries (Debian 13, Ubuntu 24.10 or newer, Fedora 41 or newer, and similar).</li>
+    <li>Internet access for the weekly schedule refresh.</li>
+  </ul>
+
+  <footer>
+    On The Dial is written by John, OH2GBA. Contact: <a href="mailto:john@oh2gba.eu">john@oh2gba.eu</a>.
+    Schedule data remains the property of its publishers.
+  </footer>
+</main>
+<script>
+  // Click the screenshot to view it at full size; click or press Escape to close.
+  (function () {
+    var shot = document.getElementById('shot'), box = document.getElementById('lightbox');
+    shot.addEventListener('click', function (e) { e.preventDefault(); box.hidden = false; box.scrollLeft = 0; });
+    box.addEventListener('click', function () { box.hidden = true; });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') box.hidden = true; });
+  })();
+</script>
+</body>
+</html>
