@@ -40,8 +40,14 @@ public:
     using QSortFilterProxyModel::QSortFilterProxyModel;
     void setOnAirOnly(bool on)
     {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
+        beginFilterChange();
         m_onAirOnly = on;
-        invalidateFilter();
+        endFilterChange();
+#else
+        m_onAirOnly = on;
+        invalidateFilter();   // deprecated from Qt 6.10 on, replaced above
+#endif
     }
 
 protected:
