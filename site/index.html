@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>On The Dial – shortwave station identifier for your radio (Windows, Linux)</title>
-<meta name="description" content="On The Dial (otd) shows which shortwave station is on the frequency your receiver is tuned to, live from the EiBi, HFCC and Aoki schedules. Follows the rig through Hamlib rigctld. Free download for Windows and Linux.">
+<title>On The Dial – shortwave station identifier for your radio (Windows, Linux, macOS)</title>
+<meta name="description" content="On The Dial (otd) shows which shortwave station is on the frequency your receiver is tuned to, live from the EiBi, HFCC and Aoki schedules. Follows the rig through Hamlib rigctld. Free download for Windows, Linux and macOS.">
 <meta name="keywords" content="shortwave, SWL, station identifier, shortwave schedule, EiBi, HFCC, Aoki, rigctld, Hamlib, utility stations, numbers stations, radio listening, DX">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://onthedial.oh2gba.eu/">
@@ -29,7 +29,7 @@
   "alternateName": "otd",
   "applicationCategory": "UtilitiesApplication",
   "applicationSubCategory": "Amateur radio, shortwave listening",
-  "operatingSystem": "Windows 10, Windows 11, Linux",
+  "operatingSystem": "Windows 10, Windows 11, Linux, macOS 12+",
   "softwareVersion": "1.0.0",
   "url": "https://onthedial.oh2gba.eu/",
   "downloadUrl": "https://onthedial.oh2gba.eu/#download",
@@ -59,6 +59,7 @@
     <p class="cta">
       <a class="button" href="downloads/otd-1.0.0-windows-x64.zip">Download for Windows</a>
       <a class="button" href="downloads/otd-1.0.0-x86_64.AppImage">Download for Linux</a>
+      <a class="button" href="downloads/otd-1.0.0-macos.dmg">Download for macOS</a>
       <a class="button secondary" href="https://github.com/oh2gba/onthedial">Source on GitHub</a>
     </p>
     <p class="note">Version 1.0.0, free and open source. <a href="#download">Details and checksums</a> ·
@@ -98,7 +99,10 @@
     <tr><td>Linux, 64-bit</td>
         <td><a href="downloads/otd-1.0.0-x86_64.AppImage">otd-1.0.0-x86_64.AppImage</a> (32 MB)</td>
         <td>Make it executable (<code>chmod +x</code>) and run it. Works on distributions from 2022 on (glibc 2.35). Install <code>libhamlib-utils</code> or <code>hamlib</code> for rigctld.</td></tr>
-    <tr><td>macOS</td><td>not yet</td><td>Build from source with Qt 6 and CMake.</td></tr>
+    <tr><td>macOS 12 or newer, Apple Silicon and Intel</td>
+        <td><a href="downloads/otd-1.0.0-macos.dmg">otd-1.0.0-macos.dmg</a> (26 MB)</td>
+        <td>Open the disk image and drag the app to Applications. It is not notarized: on first start right-click it and
+            choose <em>Open</em>. Install rigctld with <code>brew install hamlib</code>.</td></tr>
   </table>
   <p class="note">SHA-256 checksums: <a href="downloads/SHA256SUMS.txt">SHA256SUMS.txt</a>. The same files are attached to the
      <a href="https://github.com/oh2gba/onthedial/releases">releases on GitHub</a>. Windows may warn about an unknown
