@@ -18,6 +18,7 @@ struct AppSettings
     int rigPort = 4532;
     int pollIntervalMs = 500;
     double toleranceKHz = 5.0;
+    int ituRegion = 1;      // 1 Europe/Africa, 2 Americas, 3 Asia/Pacific
     int refreshDays = 7;
     QString eibiUrl = QStringLiteral("http://www.eibispace.de/dx/");
     QString hfccUrl = QStringLiteral("http://www.hfcc.org/data/");
@@ -53,6 +54,7 @@ private:
     QSpinBox* m_port;
     QSpinBox* m_poll;
     QDoubleSpinBox* m_tolerance;
+    QComboBox* m_region;
     QSpinBox* m_refreshDays;
     QCheckBox* m_eibiOn;
     QCheckBox* m_hfccOn;

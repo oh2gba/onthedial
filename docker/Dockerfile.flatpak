@@ -1,0 +1,9 @@
+# flatpak-builder in a container, so the Flatpak toolchain does not have to be
+# installed on the host. The Flatpak store lives in the project directory and
+# is bind-mounted to /var/lib/flatpak.
+FROM debian:trixie-slim
+ENV DEBIAN_FRONTEND=noninteractive LANG=C.UTF-8 LC_ALL=C.UTF-8
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        flatpak flatpak-builder ca-certificates git python3 appstream elfutils librsvg2-common dbus \
+    && dbus-uuidgen > /etc/machine-id && rm -rf /var/lib/apt/lists/*
+WORKDIR /src

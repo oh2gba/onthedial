@@ -34,6 +34,16 @@
   <categories><category>HamRadio</category><category>Network</category></categories>
   <keywords><keyword>shortwave</keyword><keyword>SWL</keyword><keyword>rigctld</keyword><keyword>EiBi</keyword></keywords>
   <releases>
-    <release version="@PROJECT_VERSION@" date="2026-09-20"/>
+    <release version="1.0.1" date="2026-09-20">
+      <description>
+        <ul>
+          <li>Band plan indicator next to the frequency (broadcast, amateur, aeronautical, maritime, time signal bands) with an ITU region setting</li>
+          <li>macOS build and Flatpak packaging</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.0.0" date="2026-09-20">
+      <description><p>First release.</p></description>
+    </release>
   </releases>
 </component>

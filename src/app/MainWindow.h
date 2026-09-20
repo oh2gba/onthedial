@@ -2,6 +2,7 @@
 #pragma once
 
 #include "SettingsDialog.h"
+#include "core/BandPlan.h"
 #include <QMainWindow>
 
 class QCheckBox;
@@ -77,6 +78,8 @@ private:
 
     QLabel* m_freqLabel = nullptr;
     QLabel* m_modeLabel = nullptr;
+    QLabel* m_bandLabel = nullptr;
+    BandPlan m_bandPlan;
     QLabel* m_clockLabel = nullptr;
     QLabel* m_countLabel = nullptr;
     QCheckBox* m_followRig = nullptr;

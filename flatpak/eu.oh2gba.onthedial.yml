@@ -1,9 +1,8 @@
-# Flatpak manifest for On The Dial. Build locally with:
-#   flatpak-builder --user --install --force-clean build-flatpak flatpak/eu.oh2gba.onthedial.yml
+# Flatpak manifest for On The Dial. Local build: flatpak/build.sh
 # For Flathub the "sources" of the last module point at a release tag.
 app-id: eu.oh2gba.onthedial
 runtime: org.kde.Platform
-runtime-version: '6.8'
+runtime-version: '6.11'
 sdk: org.kde.Sdk
 command: otd
 finish-args:
@@ -11,8 +10,10 @@ finish-args:
   - --socket=fallback-x11
   - --socket=wayland
   - --device=dri
-  - --share=network          # rigctld on the network and schedule downloads
-  - --device=all             # serial ports when rigctld is started from inside
+  # Schedule downloads and the TCP connection to rigctld
+  - --share=network
+  # Serial/USB access so rigctld started from the app can reach the radio
+  - --device=all
 cleanup:
   - /include
   - /lib/pkgconfig
@@ -37,6 +38,8 @@ modules:
       - /bin/rigswr
       - /bin/rotctl*
       - /bin/rigtest*
+    post-install:
+      - install -Dm644 COPYING.LIB ${FLATPAK_DEST}/share/licenses/${FLATPAK_ID}/hamlib/COPYING.LIB
     sources:
       - type: archive
         url: https://github.com/Hamlib/Hamlib/releases/download/4.7.2/hamlib-4.7.2.tar.gz
@@ -48,6 +51,9 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
       - -DOTD_BUILD_TESTS=OFF
       - -DOTD_DESKTOP_ID=eu.oh2gba.onthedial
+    post-install:
+      - install -Dm644 LICENSE ${FLATPAK_DEST}/share/licenses/${FLATPAK_ID}/onthedial/LICENSE
+      - install -Dm644 third_party/miniz/LICENSE ${FLATPAK_DEST}/share/licenses/${FLATPAK_ID}/miniz/LICENSE
     sources:
       - type: git
         url: https://github.com/oh2gba/onthedial.git

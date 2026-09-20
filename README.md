@@ -13,9 +13,9 @@ time signals, and oddities such as *The Buzzer* on 4625 kHz.
 
 Ready-made builds, no installation needed:
 
-- Windows 10/11 (64-bit): [otd-1.0.0-windows-x64.zip](https://onthedial.oh2gba.eu/downloads/otd-1.0.0-windows-x64.zip), unzip and start `otd.exe`. Hamlib's rigctld is included.
-- Linux (64-bit): [otd-1.0.0-x86_64.AppImage](https://onthedial.oh2gba.eu/downloads/otd-1.0.0-x86_64.AppImage), `chmod +x` and run. Needs the distribution's Hamlib package for rigctld.
-- macOS 12 or newer (Apple Silicon and Intel): [otd-1.0.0-macos.dmg](https://onthedial.oh2gba.eu/downloads/otd-1.0.0-macos.dmg).
+- Windows 10/11 (64-bit): [otd-1.0.1-windows-x64.zip](https://onthedial.oh2gba.eu/downloads/otd-1.0.1-windows-x64.zip), unzip and start `otd.exe`. Hamlib's rigctld is included.
+- Linux (64-bit): [otd-1.0.1-x86_64.AppImage](https://onthedial.oh2gba.eu/downloads/otd-1.0.1-x86_64.AppImage), `chmod +x` and run. Needs the distribution's Hamlib package for rigctld.
+- macOS 12 or newer (Apple Silicon and Intel): [otd-1.0.1-macos.dmg](https://onthedial.oh2gba.eu/downloads/otd-1.0.1-macos.dmg).
   The app is not notarized, so on first start right-click it and choose Open. Install rigctld with `brew install hamlib`.
 - Checksums: [SHA256SUMS.txt](https://onthedial.oh2gba.eu/downloads/SHA256SUMS.txt). The same files are attached to the GitHub releases.
 
@@ -36,6 +36,9 @@ How to hook up the radio: <https://onthedial.oh2gba.eu/rig.html>
   their distance from the tuned frequency. Double-click a row to tune the rig to it
   (frequency and mode via rigctld); without a rig the view jumps there instead.
 - Mode column (AM, USB, LSB, CW, DRM, RTTY, FAX, HFDL) derived from each source's markers.
+- Band indicator: the header shows the allocation of the tuned frequency (49 m broadcast, 40 m amateur,
+  aeronautical mobile, maritime mobile, standard time) for the ITU region chosen in Settings.
+  The table lives in `data/bandplan.json`.
 - Personal list: add your own identifications (Stations menu or right-click), edit, delete,
   import and export as CSV. They appear with source "Mine" and live in the same database.
 - Right-click a row for the matching sigidwiki.com page of the mode, or a wiki search for the station.

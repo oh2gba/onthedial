@@ -30,7 +30,7 @@
   "applicationCategory": "UtilitiesApplication",
   "applicationSubCategory": "Amateur radio, shortwave listening",
   "operatingSystem": "Windows 10, Windows 11, Linux, macOS 12+",
-  "softwareVersion": "1.0.0",
+  "softwareVersion": "1.0.1",
   "url": "https://onthedial.oh2gba.eu/",
   "downloadUrl": "https://onthedial.oh2gba.eu/#download",
   "screenshot": "https://onthedial.oh2gba.eu/screenshot.png",
@@ -57,12 +57,12 @@
        that frequency right now: broadcasters, utility stations, time signals, and oddities such as
        <em>The Buzzer</em> on 4625&nbsp;kHz.</p>
     <p class="cta">
-      <a class="button" href="downloads/otd-1.0.0-windows-x64.zip">Download for Windows</a>
-      <a class="button" href="downloads/otd-1.0.0-x86_64.AppImage">Download for Linux</a>
-      <a class="button" href="downloads/otd-1.0.0-macos.dmg">Download for macOS</a>
+      <a class="button" href="downloads/otd-1.0.1-windows-x64.zip">Download for Windows</a>
+      <a class="button" href="downloads/otd-1.0.1-x86_64.AppImage">Download for Linux</a>
+      <a class="button" href="downloads/otd-1.0.1-macos.dmg">Download for macOS</a>
       <a class="button secondary" href="https://github.com/oh2gba/onthedial">Source on GitHub</a>
     </p>
-    <p class="note">Version 1.0.0, free and open source. <a href="#download">Details and checksums</a> ·
+    <p class="note">Version 1.0.1, free and open source. <a href="#download">Details and checksums</a> ·
        <a href="rig.html">How to connect your radio</a></p>
   </header>
 
@@ -75,6 +75,7 @@
     <div class="card"><h3>Knows who is on air</h3><p>Every entry is checked against UTC: time window, weekday rules, validity dates, summer and winter seasons. On-air stations are listed first.</p></div>
     <div class="card"><h3>Three schedule databases</h3><p>EiBi, HFCC and the Aoki list side by side, each switchable, cached locally and refreshed at most once a week.</p></div>
     <div class="card"><h3>Search anywhere</h3><p>Type "buzzer" and see where it is, on-air hits first with the distance from your VFO. Double-click a row to tune the rig there.</p></div>
+    <div class="card"><h3>Band indicator</h3><p>Tells you which band you are in: 49 m broadcast, 40 m amateur, aeronautical, maritime or a time signal channel, for your ITU region.</p></div>
     <div class="card"><h3>Mode column</h3><p>AM, USB, LSB, CW, DRM, RTTY, FAX or HFDL, derived from the markers in each source.</p></div>
     <div class="card"><h3>Your own list</h3><p>Heard something the lists do not know? Add it with a note, it shows up like any other entry and can be exported. A right-click opens the Signal Identification Wiki for the mode or the station.</p></div>
     <div class="card"><h3>Small and self-contained</h3><p>C++ and Qt 6, a single binary of a few hundred kilobytes, one SQLite file for schedules and settings. No hamlib dependency.</p></div>
@@ -90,17 +91,17 @@
   </table>
 
   <h2 id="download">Download</h2>
-  <p>Version 1.0.0, built 2026-09-20. No installation needed.</p>
+  <p>Version 1.0.1, built 2026-09-20. No installation needed.</p>
   <table>
     <tr><th>Platform</th><th>File</th><th>How to run</th></tr>
     <tr><td>Windows 10/11, 64-bit</td>
-        <td><a href="downloads/otd-1.0.0-windows-x64.zip">otd-1.0.0-windows-x64.zip</a> (16 MB)</td>
+        <td><a href="downloads/otd-1.0.1-windows-x64.zip">otd-1.0.1-windows-x64.zip</a> (16 MB)</td>
         <td>Unzip anywhere, start <code>otd.exe</code>. Hamlib's rigctld is included, see <a href="rig.html">Connecting your radio</a>.</td></tr>
     <tr><td>Linux, 64-bit</td>
-        <td><a href="downloads/otd-1.0.0-x86_64.AppImage">otd-1.0.0-x86_64.AppImage</a> (32 MB)</td>
+        <td><a href="downloads/otd-1.0.1-x86_64.AppImage">otd-1.0.1-x86_64.AppImage</a> (32 MB)</td>
         <td>Make it executable (<code>chmod +x</code>) and run it. Works on distributions from 2022 on (glibc 2.35). Install <code>libhamlib-utils</code> or <code>hamlib</code> for rigctld.</td></tr>
     <tr><td>macOS 12 or newer, Apple Silicon and Intel</td>
-        <td><a href="downloads/otd-1.0.0-macos.dmg">otd-1.0.0-macos.dmg</a> (26 MB)</td>
+        <td><a href="downloads/otd-1.0.1-macos.dmg">otd-1.0.1-macos.dmg</a> (26 MB)</td>
         <td>Open the disk image and drag the app to Applications. It is not notarized: on first start right-click it and
             choose <em>Open</em>. Install rigctld with <code>brew install hamlib</code>.</td></tr>
   </table>

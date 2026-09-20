@@ -85,6 +85,7 @@ MainWindow::MainWindow(const QString& dataDir, double startKHz, QWidget* parent)
     connect(m_launcher, &RigctldLauncher::stopped, this, [this](const QString& msg) {
         statusBar()->showMessage(msg, 15000);
     });
+    m_bandPlan = BandPlan::builtIn();
     m_model = new StationModel(m_db, this);
     m_proxy = new StationFilter(this);
     m_proxy->setSourceModel(m_model);
@@ -214,6 +215,10 @@ void MainWindow::buildUi()
     mid.setPointSize(mid.pointSize() + 3);
     m_modeLabel->setFont(mid);
 
+    m_bandLabel = new QLabel;
+    m_bandLabel->setFont(mid);
+    m_bandLabel->setToolTip(tr("Allocation of the tuned frequency (ITU region set in Settings)"));
+
     m_clockLabel = new QLabel;
     m_clockLabel->setFont(mid);
     m_clockLabel->setToolTip(tr("Current UTC time; schedules are evaluated against it"));
@@ -222,6 +227,8 @@ void MainWindow::buildUi()
     header->addWidget(m_freqLabel);
     header->addSpacing(12);
     header->addWidget(m_modeLabel);
+    header->addSpacing(18);
+    header->addWidget(m_bandLabel);
     header->addStretch();
     header->addWidget(m_clockLabel);
 
@@ -370,6 +377,26 @@ void MainWindow::updateHeader()
         m_modeLabel->setText(m_rigConnected ? m_rigMode : tr("no rig"));
     else
         m_modeLabel->setText(tr("manual"));
+
+    QString band = m_centreKHz > 0.0 ? m_bandPlan.describe(m_centreKHz, m_settings.ituRegion) : QString();
+    if (band.isEmpty() && m_centreKHz > 0.0)
+        band = tr("no allocation listed");
+    QString colour;
+    const QVector<BandPlan::Band> bands = m_bandPlan.lookup(m_centreKHz, m_settings.ituRegion);
+    if (!bands.isEmpty())
+    {
+        const QString kind = bands.first().kind;
+        if (kind == QLatin1String("broadcast"))     colour = QStringLiteral("#e8b339");
+        else if (kind == QLatin1String("amateur"))  colour = QStringLiteral("#7ee787");
+        else if (kind == QLatin1String("aero"))     colour = QStringLiteral("#79c0ff");
+        else if (kind == QLatin1String("maritime")) colour = QStringLiteral("#56d4dd");
+        else if (kind == QLatin1String("time"))     colour = QStringLiteral("#d2a8ff");
+        else if (kind == QLatin1String("beacon"))   colour = QStringLiteral("#c9d1d9");
+        else                                        colour = QStringLiteral("#ffa657");
+    }
+    m_bandLabel->setStyleSheet(colour.isEmpty() ? QStringLiteral("color: palette(mid);")
+                                                : QStringLiteral("color: %1;").arg(colour));
+    m_bandLabel->setText(band);
 }
 
 void MainWindow::setCentreKHz(double kHz, bool fromRig)
@@ -671,6 +698,7 @@ void MainWindow::openSettings()
     m_settings.rigPort = updated.rigPort;
     m_settings.pollIntervalMs = updated.pollIntervalMs;
     m_settings.toleranceKHz = updated.toleranceKHz;
+    m_settings.ituRegion = updated.ituRegion;
     m_settings.refreshDays = updated.refreshDays;
     m_settings.eibiUrl = updated.eibiUrl;
     m_settings.hfccUrl = updated.hfccUrl;
@@ -693,6 +721,7 @@ void MainWindow::openSettings()
     applySettings();
     if (launcherChanged)
         applyLauncher();
+    updateHeader();
     updateDbStatus();
     refreshLookup();
     if (m_updater->anyStale(m_settings.refreshDays))

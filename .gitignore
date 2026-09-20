@@ -1,13 +1,20 @@
-build/
-build-*/
-*.user
-.cache/
-data-local/
 
 # secrets
+*.user
+.cache/
 .env
 .env.*
-dist/
+.flatpak-builder/
+.flatpak/
+build-*/
 build-appimage/
+build-flatpak/
 build-windows/
+build/
+builddir/
+data-local/
+dist/
+eu.oh2gba.onthedial.local.yml
+repo-flatpak/
+repo/
 site/downloads/

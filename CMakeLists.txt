@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(onthedial VERSION 1.0.0 LANGUAGES C CXX)
+project(onthedial VERSION 1.0.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -42,6 +42,8 @@ add_library(otd_core STATIC
   src/core/Updater.h         src/core/Updater.cpp
   src/core/SigidWiki.h       src/core/SigidWiki.cpp
   src/core/UserList.h        src/core/UserList.cpp
+  src/core/BandPlan.h        src/core/BandPlan.cpp
+  src/core/core.qrc
 )
 target_include_directories(otd_core PUBLIC src)
 target_link_libraries(otd_core PUBLIC Qt6::Core Qt6::Network Qt6::Sql PRIVATE miniz)
@@ -85,6 +87,10 @@ if(UNIX AND NOT APPLE)
     DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
   install(FILES data/otd.svg RENAME ${OTD_DESKTOP_ID}.svg
     DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
+  foreach(size 64 128 256)
+    install(FILES data/otd-${size}.png RENAME ${OTD_DESKTOP_ID}.png
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/${size}x${size}/apps)
+  endforeach()
   install(FILES ${CMAKE_BINARY_DIR}/eu.oh2gba.onthedial.metainfo.xml
     DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
 endif()

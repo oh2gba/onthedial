@@ -24,7 +24,7 @@ const char* kKeys[] = {"rig.host", "rig.port", "rig.pollMs", "view.toleranceKHz"
                        "view.followRig", "view.alwaysOnTop", "data.refreshDays", "data.eibiUrl",
                        "data.hfccUrl", "data.aokiUrl", "data.eibiEnabled", "data.hfccEnabled",
                        "data.aokiEnabled", "rigctld.launch", "rigctld.path", "rigctld.model",
-                       "rigctld.device", "rigctld.baud", "rigctld.extra"};
+                       "rigctld.device", "rigctld.baud", "rigctld.extra", "view.ituRegion"};
 QString key(int i) { return QStringLiteral("settings.") + QLatin1String(kKeys[i]); }
 bool toBool(const QString& v, bool fallback)
 {
@@ -61,6 +61,7 @@ void AppSettings::load(const StationDb* db)
     rigDevice = str(17, rigDevice);
     rigBaud = int(num(18, rigBaud));
     rigctldExtra = str(19, rigctldExtra);
+    ituRegion = qBound(1, int(num(20, ituRegion)), 3);
 }
 
 void AppSettings::save(StationDb* db) const
@@ -73,7 +74,7 @@ void AppSettings::save(StationDb* db) const
         QString::number(eibiEnabled ? 1 : 0), QString::number(hfccEnabled ? 1 : 0),
         QString::number(aokiEnabled ? 1 : 0), QString::number(launchRigctld ? 1 : 0),
         rigctldPath, QString::number(rigModel), rigDevice, QString::number(rigBaud),
-        rigctldExtra};
+        rigctldExtra, QString::number(ituRegion)};
     for (int i = 0; i < int(sizeof(kKeys) / sizeof(kKeys[0])); ++i)
         db->setMeta(key(i), values[i]);
 }
@@ -157,6 +158,13 @@ SettingsDialog::SettingsDialog(const AppSettings& cur, QWidget* parent)
     m_tolerance->setSuffix(tr(" kHz"));
     m_tolerance->setValue(cur.toleranceKHz);
     viewForm->addRow(tr("Default search width (±):"), m_tolerance);
+    m_region = new QComboBox;
+    m_region->addItem(tr("Region 1: Europe, Africa, Middle East, Russia"), 1);
+    m_region->addItem(tr("Region 2: the Americas"), 2);
+    m_region->addItem(tr("Region 3: Asia and Pacific"), 3);
+    m_region->setCurrentIndex(qMax(0, m_region->findData(cur.ituRegion)));
+    m_region->setToolTip(tr("Band allocations differ slightly between the three ITU regions"));
+    viewForm->addRow(tr("ITU region (band plan):"), m_region);
 
     auto* dataBox = new QGroupBox(tr("Databases"));
     auto* dataForm = new QFormLayout(dataBox);
@@ -252,6 +260,7 @@ AppSettings SettingsDialog::settings(const AppSettings& base) const
     s.rigPort = m_port->value();
     s.pollIntervalMs = m_poll->value();
     s.toleranceKHz = m_tolerance->value();
+    s.ituRegion = m_region->currentData().toInt();
     s.refreshDays = m_refreshDays->value();
     s.eibiUrl = m_eibiUrl->text().trimmed();
     s.hfccUrl = m_hfccUrl->text().trimmed();
