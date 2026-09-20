@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://onthedial.oh2gba.eu/sitemap.xml
