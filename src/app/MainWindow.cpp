@@ -387,7 +387,7 @@ void MainWindow::buildUi()
     statusBar()->addPermanentWidget(m_updateLabel);
     statusBar()->addPermanentWidget(m_dbStatus);
 
-    resize(1000, 600);
+    resize(1400, 760);
 }
 
 void MainWindow::applySettings()
