@@ -34,6 +34,9 @@
   <categories><category>HamRadio</category><category>Network</category></categories>
   <keywords><keyword>shortwave</keyword><keyword>SWL</keyword><keyword>rigctld</keyword><keyword>EiBi</keyword></keywords>
   <releases>
+    <release version="1.1.1" date="2026-09-22">
+      <description><p>The version check now succeeds on hosts where IPv6 connections hang.</p></description>
+    </release>
     <release version="1.1.0" date="2026-09-22">
       <description>
         <ul>

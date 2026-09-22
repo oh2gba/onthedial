@@ -119,7 +119,9 @@ void UpdateCheck::run(const QUrl& endpoint, bool force)
     req.setHeader(QNetworkRequest::UserAgentHeader,
                   QStringLiteral("otd/%1 (%2)").arg(QCoreApplication::applicationVersion(), platformName()));
     req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
-    req.setTransferTimeout(15000);
+    // Generous: on hosts whose IPv6 route is broken Qt only falls back to
+    // IPv4 after the first attempt gives up, which takes a while.
+    req.setTransferTimeout(90000);
 
     m_busy = true;
     QNetworkReply* reply = m_nam->get(req);
