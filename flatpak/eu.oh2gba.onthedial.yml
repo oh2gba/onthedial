@@ -57,5 +57,5 @@ modules:
     sources:
       - type: git
         url: https://github.com/oh2gba/onthedial.git
-        tag: v1.1.1
-        commit: be8939e623a78ad3b29f47308d2d4790732fa539
+        tag: v1.2.0
+        commit: 29d0db154ba5b2c6f8a725841ab106831fa8916d
