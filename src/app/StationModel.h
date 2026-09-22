@@ -37,16 +37,23 @@ public:
     {
         SortRole = Qt::UserRole + 1,
         StatusRole,
-        OnAirRankRole
+        OnAirRankRole,
+        DeltaRole,
+        DialSideRole    // -1 = upper half of the dial view, +1 = lower half
     };
 
     explicit StationModel(StationDb* db, QObject* parent = nullptr);
 
     void setEntries(const StationList& entries, double centreKHz);
+    // Dial order: ascending frequency, the rows nearest the VFO in the middle.
+    void setDialEntries(const StationList& entries, double centreKHz);
+    // dial view: rows this close to the VFO are highlighted
+    void setHighlightKHz(double kHz);
     void setCentre(double centreKHz);
     void refreshStatus(const QDateTime& utc = QDateTime::currentDateTimeUtc());
     int onAirCount() const;
     const StationEntry& entryAt(int row) const { return m_rows[row].entry; }
+    Schedule::OnAir statusAt(int row) const { return m_rows[row].status; }
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -59,7 +66,11 @@ private:
         StationEntry entry;
         Schedule::OnAir status = Schedule::OnAir::Unknown;
         double delta = 0.0;
+        bool shaded = false;    // background shade alternates per frequency
+        int side = 0;           // which half of the dial view shows the row
     };
+    void shadeGroups();
+    bool m_dialOrder = false;
     static int rank(Schedule::OnAir s);
     static QString sourceLabel(const QString& id);
     QString languageOf(const StationEntry& e) const;
@@ -70,5 +81,6 @@ private:
     StationDb* m_db;
     QVector<Row> m_rows;
     double m_centre = 0.0;
+    double m_highlightKHz = 0.0;
     QDateTime m_lastEval;
 };

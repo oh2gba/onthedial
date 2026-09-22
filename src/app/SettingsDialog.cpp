@@ -25,7 +25,7 @@ const char* kKeys[] = {"rig.host", "rig.port", "rig.pollMs", "view.toleranceKHz"
                        "data.hfccUrl", "data.aokiUrl", "data.eibiEnabled", "data.hfccEnabled",
                        "data.aokiEnabled", "rigctld.launch", "rigctld.path", "rigctld.model",
                        "rigctld.device", "rigctld.baud", "rigctld.extra", "view.ituRegion",
-                       "update.check", "update.url"};
+                       "update.check", "update.url", "view.dial"};
 QString key(int i) { return QStringLiteral("settings.") + QLatin1String(kKeys[i]); }
 bool toBool(const QString& v, bool fallback)
 {
@@ -65,6 +65,7 @@ void AppSettings::load(const StationDb* db)
     ituRegion = qBound(1, int(num(20, ituRegion)), 3);
     updateCheck = toBool(str(21, QString()), updateCheck);
     updateUrl = str(22, updateUrl);
+    dialView = toBool(str(23, QString()), dialView);
 }
 
 void AppSettings::save(StationDb* db) const
@@ -77,7 +78,8 @@ void AppSettings::save(StationDb* db) const
         QString::number(eibiEnabled ? 1 : 0), QString::number(hfccEnabled ? 1 : 0),
         QString::number(aokiEnabled ? 1 : 0), QString::number(launchRigctld ? 1 : 0),
         rigctldPath, QString::number(rigModel), rigDevice, QString::number(rigBaud),
-        rigctldExtra, QString::number(ituRegion), QString::number(updateCheck ? 1 : 0), updateUrl};
+        rigctldExtra, QString::number(ituRegion), QString::number(updateCheck ? 1 : 0), updateUrl,
+        QString::number(dialView ? 1 : 0)};
     for (int i = 0; i < int(sizeof(kKeys) / sizeof(kKeys[0])); ++i)
         db->setMeta(key(i), values[i]);
 }

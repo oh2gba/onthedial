@@ -34,6 +34,15 @@
   <categories><category>HamRadio</category><category>Network</category></categories>
   <keywords><keyword>shortwave</keyword><keyword>SWL</keyword><keyword>rigctld</keyword><keyword>EiBi</keyword></keywords>
   <releases>
+    <release version="1.2.0" date="2026-09-22">
+      <description>
+        <ul>
+          <li>Dial view: the tuned frequency stays in the middle of the list, lower frequencies above it and higher ones below, like a tuning scale</li>
+          <li>Entries within the chosen ± kHz range are shown in red</li>
+          <li>Column widths follow the window width</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.1.1" date="2026-09-22">
       <description><p>The version check now succeeds on hosts where IPv6 connections hang.</p></description>
     </release>

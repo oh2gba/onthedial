@@ -332,6 +332,46 @@ StationList StationDb::lookup(double centreKHz, double toleranceKHz,
     return out;
 }
 
+StationList StationDb::around(double centreKHz, int count, const QStringList& sources) const
+{
+    StationList out;
+    QSqlDatabase db = QSqlDatabase::database(m_connectionName);
+    QString notIn;
+    if (!sources.isEmpty())
+    {
+        QStringList marks;
+        for (int i = 0; i < sources.size(); ++i)
+            marks << QStringLiteral("?");
+        notIn = QStringLiteral(" AND source NOT IN (%1)").arg(marks.join(QLatin1Char(',')));
+    }
+    // below: nearest first, then reversed into ascending order
+    QSqlQuery below(db);
+    below.prepare(QStringLiteral("SELECT %1 FROM stations WHERE khz < ?%2 ORDER BY khz DESC, start_min DESC LIMIT ?")
+                      .arg(QLatin1String(kSelectColumns), notIn));
+    below.addBindValue(centreKHz);
+    for (const QString& src : sources)
+        below.addBindValue(src);
+    below.addBindValue(count);
+    StationList lower;
+    if (below.exec())
+        while (below.next())
+            lower.push_back(fromRecord(below));
+    for (int i = lower.size() - 1; i >= 0; --i)
+        out.push_back(lower[i]);
+
+    QSqlQuery above(db);
+    above.prepare(QStringLiteral("SELECT %1 FROM stations WHERE khz >= ?%2 ORDER BY khz, start_min LIMIT ?")
+                      .arg(QLatin1String(kSelectColumns), notIn));
+    above.addBindValue(centreKHz);
+    for (const QString& src : sources)
+        above.addBindValue(src);
+    above.addBindValue(count);
+    if (above.exec())
+        while (above.next())
+            out.push_back(fromRecord(above));
+    return out;
+}
+
 StationList StationDb::search(const QString& text, const QStringList& sources, int limit) const
 {
     StationList out;

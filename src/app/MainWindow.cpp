@@ -16,6 +16,9 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QCloseEvent>
+#include <QEvent>
+#include <QResizeEvent>
+#include <QShowEvent>
 #include <QDesktopServices>
 #include <QMenu>
 #include <QDoubleSpinBox>
@@ -28,6 +31,7 @@
 #include <QMessageBox>
 #include <QNetworkAccessManager>
 #include <QSortFilterProxyModel>
+#include <QScrollBar>
 #include <QStatusBar>
 #include <QTableView>
 #include <QTimer>
@@ -38,6 +42,12 @@ class StationFilter : public QSortFilterProxyModel
 {
 public:
     using QSortFilterProxyModel::QSortFilterProxyModel;
+    // side: 0 = everything, -1 = only below the VFO, +1 = only at or above it
+    void setSide(int side)
+    {
+        m_side = side;
+        invalidate();
+    }
     void setOnAirOnly(bool on)
     {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
@@ -53,9 +63,14 @@ public:
 protected:
     bool filterAcceptsRow(int row, const QModelIndex& parent) const override
     {
+        const QModelIndex idx = sourceModel()->index(row, 0, parent);
+        if (m_side != 0)
+        {
+            if (sourceModel()->data(idx, StationModel::DialSideRole).toInt() != m_side)
+                return false;
+        }
         if (m_onAirOnly)
         {
-            const QModelIndex idx = sourceModel()->index(row, 0, parent);
             const int rank = sourceModel()->data(idx, StationModel::OnAirRankRole).toInt();
             if (rank > 1)   // keep "on air" and "maybe"
                 return false;
@@ -65,6 +80,7 @@ protected:
 
 private:
     bool m_onAirOnly = false;
+    int m_side = 0;
 };
 
 MainWindow::MainWindow(const QString& dataDir, double startKHz, QWidget* parent)
@@ -100,6 +116,12 @@ MainWindow::MainWindow(const QString& dataDir, double startKHz, QWidget* parent)
     m_proxy->setSortRole(StationModel::SortRole);
     m_proxy->setFilterCaseSensitivity(Qt::CaseInsensitive);
     m_proxy->setFilterKeyColumn(-1);
+    m_proxyAbove = new StationFilter(this);
+    m_proxyAbove->setSourceModel(m_model);
+    m_proxyAbove->setSortRole(StationModel::SortRole);
+    m_proxyAbove->setFilterCaseSensitivity(Qt::CaseInsensitive);
+    m_proxyAbove->setFilterKeyColumn(-1);
+    m_proxyAbove->setSide(+1);
 
     buildUi();
     applySettings();
@@ -130,6 +152,8 @@ MainWindow::MainWindow(const QString& dataDir, double startKHz, QWidget* parent)
     // that the user may drag every column.
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
     m_table->horizontalHeader()->setStretchLastSection(false);
+    // columns grow and shrink with the window
+    m_table->viewport()->installEventFilter(this);
 
     if (startKHz > 0.0)
     {
@@ -247,6 +271,14 @@ void MainWindow::buildUi()
                         this, &MainWindow::openMyStations);
 
     QMenu* view = menuBar()->addMenu(tr("&View"));
+    m_dialAction = view->addAction(tr("&Dial view (VFO in the middle)"));
+    m_dialAction->setCheckable(true);
+    m_dialAction->setChecked(true);
+    connect(m_dialAction, &QAction::toggled, this, [this](bool on) {
+        m_settings.dialView = on;
+        updateToleranceHint();
+        refreshLookup();
+    });
     m_onTopAction = view->addAction(tr("Always on &top"));
     m_onTopAction->setCheckable(true);
     connect(m_onTopAction, &QAction::toggled, this, &MainWindow::onAlwaysOnTopToggled);
@@ -332,26 +364,81 @@ void MainWindow::buildUi()
     controls->addWidget(m_filter, 1);
     controls->addWidget(m_countLabel);
 
-    // --- table --------------------------------------------------------
+    // --- tables -------------------------------------------------------
     m_table = new QTableView;
     m_table->setModel(m_proxy);
+    setupTable(m_table);
     m_table->setSortingEnabled(true);
-    m_table->sortByColumn(-1, Qt::AscendingOrder);   // keep model order (on air first)
-    m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_table->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_table->setAlternatingRowColors(true);
-    m_table->verticalHeader()->setVisible(false);
-    m_table->verticalHeader()->setDefaultSectionSize(
-        m_table->fontMetrics().height() + 6);
-    m_table->horizontalHeader()->setSectionsMovable(true);
-    m_table->horizontalHeader()->setStretchLastSection(false);
-    m_table->setWordWrap(false);
-    connect(m_table, &QTableView::doubleClicked, this, &MainWindow::onRowActivated);
-    m_table->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(m_table, &QTableView::customContextMenuRequested, this, &MainWindow::tableContextMenu);
+    m_table->sortByColumn(-1, Qt::AscendingOrder);   // keep model order
 
-    QHeaderView* h = m_table->horizontalHeader();
-    const int em = m_table->fontMetrics().horizontalAdvance(QLatin1Char('M'));
+    m_tableAbove = new QTableView;
+    m_tableAbove->setModel(m_proxyAbove);
+    setupTable(m_tableAbove);
+    m_tableAbove->horizontalHeader()->setVisible(false);
+    // one horizontal scrollbar for both halves: the lower table keeps it
+    m_table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // one header for both: column widths follow the upper table
+    connect(m_table->horizontalHeader(), &QHeaderView::sectionResized, this,
+            [this](int col, int, int width) { m_tableAbove->setColumnWidth(col, width); });
+    connect(m_table->horizontalScrollBar(), &QScrollBar::valueChanged,
+            m_tableAbove->horizontalScrollBar(), &QScrollBar::setValue);
+    connect(m_tableAbove->horizontalScrollBar(), &QScrollBar::valueChanged,
+            m_table->horizontalScrollBar(), &QScrollBar::setValue);
+
+    m_tableAbove->setFrameShape(QFrame::NoFrame);
+    m_tableAbove->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    // the two halves sit directly on top of each other so they read as one table
+    // Both halves are placed by hand (layoutTables) so that the seam
+    // between them sits exactly in the middle of the rows on screen.
+    m_tables = new QWidget;
+    m_tables->setMinimumHeight(120);
+    m_tables->installEventFilter(this);
+    m_table->setParent(m_tables);
+    m_tableAbove->setParent(m_tables);
+    // per pixel, so the last row of the upper half hugs the seam
+    m_table->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    m_tableAbove->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+
+    auto* central = new QWidget;
+    auto* layout = new QVBoxLayout(central);
+    layout->addLayout(header);
+    layout->addLayout(controls);
+    layout->addWidget(m_tables, 1);
+    setCentralWidget(central);
+
+    // --- status bar ---------------------------------------------------
+    m_rigStatus = new QLabel;
+    m_dbStatus = new QLabel;
+    m_updateLabel = new QLabel;
+    m_updateLabel->setOpenExternalLinks(true);
+    m_updateLabel->setTextFormat(Qt::RichText);
+    statusBar()->addWidget(m_rigStatus, 1);
+    statusBar()->addPermanentWidget(m_updateLabel);
+    statusBar()->addPermanentWidget(m_dbStatus);
+
+    resize(1400, 760);
+}
+
+void MainWindow::setupTable(QTableView* table)
+{
+    table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    table->setSelectionMode(QAbstractItemView::SingleSelection);
+    table->setAlternatingRowColors(false);   // the model shades per frequency instead
+    table->verticalHeader()->setVisible(false);
+    table->verticalHeader()->setDefaultSectionSize(table->fontMetrics().height() + 6);
+    table->horizontalHeader()->setSectionsMovable(false);
+    table->horizontalHeader()->setStretchLastSection(false);
+    table->setWordWrap(false);
+    connect(table, &QTableView::doubleClicked, this, &MainWindow::onRowActivated);
+    table->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(table, &QTableView::customContextMenuRequested, this, [this, table](const QPoint& pos) {
+        m_menuTable = table;
+        tableContextMenu(pos);
+    });
+
+    QHeaderView* h = table->horizontalHeader();
+    const int em = table->fontMetrics().horizontalAdvance(QLatin1Char('M'));
     h->resizeSection(StationModel::ColDelta, em * 6);
     h->resizeSection(StationModel::ColFrequency, em * 7);
     h->resizeSection(StationModel::ColStatus, em * 7);
@@ -366,28 +453,13 @@ void MainWindow::buildUi()
     h->resizeSection(StationModel::ColLastHeard, em * 6);
     h->resizeSection(StationModel::ColSource, em * 6);
     h->resizeSection(StationModel::ColRemarks, em * 20);
-    // Every column stays user-resizable; widths are saved on close and
-    // restored at start (see closeEvent / restoreState below).
     h->setSectionResizeMode(QHeaderView::Interactive);
+}
 
-    auto* central = new QWidget;
-    auto* layout = new QVBoxLayout(central);
-    layout->addLayout(header);
-    layout->addLayout(controls);
-    layout->addWidget(m_table, 1);
-    setCentralWidget(central);
-
-    // --- status bar ---------------------------------------------------
-    m_rigStatus = new QLabel;
-    m_dbStatus = new QLabel;
-    m_updateLabel = new QLabel;
-    m_updateLabel->setOpenExternalLinks(true);
-    m_updateLabel->setTextFormat(Qt::RichText);
-    statusBar()->addWidget(m_rigStatus, 1);
-    statusBar()->addPermanentWidget(m_updateLabel);
-    statusBar()->addPermanentWidget(m_dbStatus);
-
-    resize(1400, 760);
+QModelIndex MainWindow::sourceIndex(const QModelIndex& proxyIndex) const
+{
+    auto* proxy = qobject_cast<const QSortFilterProxyModel*>(proxyIndex.model());
+    return proxy ? proxy->mapToSource(proxyIndex) : QModelIndex();
 }
 
 void MainWindow::applySettings()
@@ -410,10 +482,14 @@ void MainWindow::applySettings()
         src->setEnabled(m_settings.aokiEnabled);
     }
 
-    const QSignalBlocker b1(m_tolerance), b2(m_onAirOnly), b3(m_followRig), b4(m_onTopAction);
+    const QSignalBlocker b1(m_tolerance), b2(m_onAirOnly), b3(m_followRig), b4(m_onTopAction),
+        b5(m_dialAction);
+    m_dialAction->setChecked(m_settings.dialView);
     m_tolerance->setValue(m_settings.toleranceKHz);
+    updateToleranceHint();
     m_onAirOnly->setChecked(m_settings.onAirOnly);
     m_proxy->setOnAirOnly(m_settings.onAirOnly);
+    m_proxyAbove->setOnAirOnly(m_settings.onAirOnly);
     m_followRig->setChecked(m_settings.followRig);
     m_freqEdit->setReadOnly(m_settings.followRig);
     m_onTopAction->setChecked(m_settings.alwaysOnTop);
@@ -482,12 +558,38 @@ void MainWindow::refreshLookup()
     const QString text = m_filter->text().trimmed();
 
     StationList list;
+    const bool dial = m_dialAction->isChecked() && text.isEmpty() && m_centreKHz > 0.0;
     if (!text.isEmpty())
         list = m_db->search(text, enabledSources());
+    else if (dial)
+        list = m_db->around(m_centreKHz, 300, enabledSources());
     else if (m_centreKHz > 0.0)
         list = m_db->lookup(m_centreKHz, m_tolerance->value(), enabledSources());
 
-    m_model->setEntries(list, m_centreKHz);
+    if (dial)
+    {
+        m_model->setHighlightKHz(m_tolerance->value());
+        m_model->setDialEntries(list, m_centreKHz);
+        m_proxy->setSide(-1);
+        m_tableAbove->setVisible(true);
+        layoutTables();
+        m_table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        m_table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        m_tableAbove->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        m_table->setFrameShape(QFrame::NoFrame);
+        centreOnMarker();
+        QTimer::singleShot(0, this, &MainWindow::centreOnMarker);
+    }
+    else
+    {
+        m_proxy->setSide(0);
+        m_tableAbove->setVisible(false);
+        layoutTables();
+        m_table->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        m_table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        m_table->setFrameShape(QFrame::StyledPanel);
+        m_model->setEntries(list, m_centreKHz);
+    }
     m_lastEvalMinute = QDateTime::currentDateTimeUtc().time().minute();
     updateCountLabel();
 }
@@ -499,7 +601,9 @@ void MainWindow::onFilterChanged(const QString&)
 
 void MainWindow::onRowActivated(const QModelIndex& index)
 {
-    const QModelIndex src = m_proxy->mapToSource(index);
+    const QModelIndex src = sourceIndex(index);
+    if (!src.isValid())
+        return;
     const double kHz = m_model->data(m_model->index(src.row(), StationModel::ColFrequency),
                                      StationModel::SortRole).toDouble();
     if (kHz <= 0.0)
@@ -537,7 +641,8 @@ void MainWindow::updateCountLabel()
         return;
     }
     m_countLabel->setText((m_filter->text().trimmed().isEmpty()
-                               ? tr("%1 on air / %2 near")
+                               ? (m_dialAction->isChecked() ? tr("%1 on air / %2 around")
+                                                            : tr("%1 on air / %2 near"))
                                : tr("%1 on air / %2 found"))
                               .arg(m_model->onAirCount())
                               .arg(m_model->rowCount()));
@@ -578,13 +683,15 @@ void MainWindow::openMyStations()
 
 void MainWindow::tableContextMenu(const QPoint& pos)
 {
-    const QModelIndex idx = m_proxy->mapToSource(m_table->indexAt(pos));
+    QTableView* table = m_menuTable ? m_menuTable : m_table;
+    const QModelIndex proxyIdx = table->indexAt(pos);
+    const QModelIndex idx = sourceIndex(proxyIdx);
     QMenu menu(this);
     if (idx.isValid())
     {
         const StationEntry e = m_model->entryAt(idx.row());
-        menu.addAction(tr("Tune to %1 kHz").arg(e.kHz), this, [this, idx]() {
-            onRowActivated(m_proxy->mapFromSource(idx));
+        menu.addAction(tr("Tune to %1 kHz").arg(e.kHz), this, [this, proxyIdx]() {
+            onRowActivated(proxyIdx);
         });
         menu.addSeparator();
         const QUrl modeUrl = SigidWiki::modeUrl(e.mode);
@@ -639,7 +746,7 @@ void MainWindow::tableContextMenu(const QPoint& pos)
     }
     menu.addAction(tr("Add station at %1 kHz...").arg(m_centreKHz, 0, 'f', 3), this, &MainWindow::addMyStation);
     menu.addAction(tr("My stations..."), this, &MainWindow::openMyStations);
-    menu.exec(m_table->viewport()->mapToGlobal(pos));
+    menu.exec(table->viewport()->mapToGlobal(pos));
 }
 
 void MainWindow::updateDbStatus()
@@ -722,13 +829,24 @@ void MainWindow::onFollowToggled(bool follow)
 void MainWindow::onToleranceChanged(double kHz)
 {
     m_settings.toleranceKHz = kHz;
-    refreshLookup();
+    if (m_dialAction->isChecked())
+        m_model->setHighlightKHz(kHz);   // recolour only, the list stays put
+    else
+        refreshLookup();
+}
+
+void MainWindow::updateToleranceHint()
+{
+    m_tolerance->setToolTip(m_dialAction->isChecked()
+        ? tr("Highlight entries this close to the tuned frequency")
+        : tr("Show entries this close to the tuned frequency"));
 }
 
 void MainWindow::onOnAirOnlyToggled(bool on)
 {
     m_settings.onAirOnly = on;
     m_proxy->setOnAirOnly(on);
+    m_proxyAbove->setOnAirOnly(on);
     updateCountLabel();
 }
 
@@ -837,6 +955,86 @@ void MainWindow::about()
            "<p>Licensed under the GNU GPL v3 or later. Built with Qt %3.</p>")
             .arg(QLatin1String(OTD_VERSION), m_dataDir.toHtmlEscaped(),
                  QLatin1String(qVersion())));
+}
+
+void MainWindow::layoutTables()
+{
+    const int w = m_tables->width();
+    const int h = m_tables->height();
+    if (!m_tableAbove->isVisibleTo(m_tables))
+    {
+        m_table->setGeometry(0, 0, w, h);
+        return;
+    }
+    // the header belongs to the upper half; the seam between the row
+    // areas is what should be in the middle
+    const int header = m_table->horizontalHeader()->height();
+    const int upper = qBound(header, (h + header) / 2, h);
+    m_table->setGeometry(0, 0, w, upper);
+    m_tableAbove->setGeometry(0, upper, w, h - upper);
+}
+
+void MainWindow::centreOnMarker()
+{
+    // a model reset only schedules the layout; do it now so that the
+    // scroll range is right before jumping to its end
+    m_table->doItemsLayout();
+    m_tableAbove->doItemsLayout();
+    // the part below the VFO ends at the bar, the part above starts there
+    m_table->scrollToBottom();
+    m_tableAbove->scrollToTop();
+    for (int c = 0; c < StationModel::ColumnCount; ++c)
+        m_tableAbove->setColumnWidth(c, m_table->columnWidth(c));
+}
+
+void MainWindow::showEvent(QShowEvent* event)
+{
+    QMainWindow::showEvent(event);
+    QTimer::singleShot(0, this, &MainWindow::centreOnMarker);
+}
+
+bool MainWindow::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_tables && event->type() == QEvent::Resize)
+        layoutTables();
+    if (watched == m_table->viewport() && event->type() == QEvent::Resize && isVisible())
+    {
+        // scale every column by the same factor, so the layout the user
+        // made keeps its proportions when the window changes width
+        const auto* re = static_cast<QResizeEvent*>(event);
+        const int oldW = re->oldSize().width();
+        const int newW = re->size().width();
+        if (oldW > 0 && newW > 0 && oldW != newW)
+        {
+            QHeaderView* h = m_table->horizontalHeader();
+            int total = 0;
+            for (int c = 0; c < StationModel::ColumnCount; ++c)
+                if (!h->isSectionHidden(c))
+                    total += h->sectionSize(c);
+            if (total > 0)
+            {
+                // hand out the width without drift from rounding
+                int given = 0, seen = 0;
+                for (int c = 0; c < StationModel::ColumnCount; ++c)
+                {
+                    if (h->isSectionHidden(c))
+                        continue;
+                    seen += h->sectionSize(c);
+                    const int target = int(qint64(total + newW - oldW) * seen / total);
+                    h->resizeSection(c, qMax(h->minimumSectionSize(), target - given));
+                    given = target;
+                }
+            }
+        }
+    }
+    return QMainWindow::eventFilter(watched, event);
+}
+
+void MainWindow::resizeEvent(QResizeEvent* event)
+{
+    QMainWindow::resizeEvent(event);
+    if (m_dialAction->isChecked())
+        QTimer::singleShot(0, this, [this]() { m_table->scrollToBottom(); });
 }
 
 void MainWindow::closeEvent(QCloseEvent* event)

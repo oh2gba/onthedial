@@ -33,6 +33,9 @@ public:
 
 protected:
     void closeEvent(QCloseEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private slots:
     void onRigFrequency(qint64 hz);
@@ -66,6 +69,11 @@ private:
     void updateDbStatus();
     QStringList enabledSources() const;
     void updateCountLabel();
+    void centreOnMarker();
+    void layoutTables();
+    void setupTable(QTableView* table);
+    void updateToleranceHint();
+    QModelIndex sourceIndex(const QModelIndex& proxyIndex) const;
     static QString formatKHz(double kHz);
 
     AppSettings m_settings;
@@ -92,7 +100,12 @@ private:
     QDoubleSpinBox* m_tolerance = nullptr;
     QCheckBox* m_onAirOnly = nullptr;
     QLineEdit* m_filter = nullptr;
-    QTableView* m_table = nullptr;
+    QTableView* m_table = nullptr;        // nearest-first list, or the part below the VFO
+    QTableView* m_tableAbove = nullptr;   // dial view: the part at and above the VFO
+    StationFilter* m_proxyAbove = nullptr;
+    QTableView* m_menuTable = nullptr;
+    QWidget* m_tables = nullptr;
+    QAction* m_dialAction = nullptr;
     QLabel* m_rigStatus = nullptr;
     QLabel* m_dbStatus = nullptr;
     QAction* m_updateAction = nullptr;

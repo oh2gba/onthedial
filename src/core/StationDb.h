@@ -33,6 +33,9 @@ public:
     // out the given sources.
     StationList lookup(double centreKHz, double toleranceKHz,
                        const QStringList& excludeSources = QStringList()) const;
+    // Up to `count` entries below and `count` entries at or above the centre
+    // frequency, ordered by frequency, leaving out the given sources.
+    StationList around(double centreKHz, int count, const QStringList& excludeSources = QStringList()) const;
     // Case-insensitive substring search on station name, language, site and
     // country code, optionally limited to some sources.
     StationList search(const QString& text, const QStringList& excludeSources = QStringList(),

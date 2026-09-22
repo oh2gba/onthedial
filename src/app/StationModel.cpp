@@ -2,6 +2,7 @@
 #include "StationModel.h"
 #include "core/StationDb.h"
 
+#include <cmath>
 #include <QBrush>
 #include <QColor>
 #include <QFont>
@@ -30,6 +31,37 @@ int StationModel::rank(Schedule::OnAir s)
 void StationModel::setEntries(const StationList& entries, double centreKHz)
 {
     beginResetModel();
+    m_dialOrder = false;
+    m_centre = centreKHz;
+    m_rows.clear();
+    m_rows.reserve(entries.size());
+    m_lastEval = QDateTime::currentDateTimeUtc();
+    for (const StationEntry& e : entries)
+    {
+        Row r;
+        r.entry = e;
+        r.delta = e.kHz - centreKHz;
+        r.status = Schedule::status(e, m_lastEval);
+        m_rows.push_back(r);
+    }
+    sortRows();
+    endResetModel();
+}
+
+void StationModel::setHighlightKHz(double kHz)
+{
+    if (qFuzzyCompare(kHz + 1.0, m_highlightKHz + 1.0))
+        return;
+    m_highlightKHz = kHz;
+    if (!m_rows.isEmpty())
+        emit dataChanged(index(0, 0), index(m_rows.size() - 1, ColumnCount - 1),
+                         { Qt::ForegroundRole });
+}
+
+void StationModel::setDialEntries(const StationList& entries, double centreKHz)
+{
+    beginResetModel();
+    m_dialOrder = true;
     m_centre = centreKHz;
     m_rows.clear();
     m_rows.reserve(entries.size());
@@ -84,8 +116,55 @@ int StationModel::onAirCount() const
     }));
 }
 
+void StationModel::shadeGroups()
+{
+    bool shade = false;
+    double last = -1.0;
+    for (Row& r : m_rows)
+    {
+        if (!qFuzzyCompare(r.entry.kHz + 1.0, last + 1.0))
+        {
+            shade = !shade;
+            last = r.entry.kHz;
+        }
+        r.shaded = shade;
+    }
+
+    // rows exactly on the VFO are shared between the two halves, the
+    // first (floor) half above the middle and the rest below it
+    int onFreq = 0;
+    for (const Row& r : m_rows)
+        if (qFuzzyIsNull(r.delta))
+            ++onFreq;
+    int seen = 0;
+    for (Row& r : m_rows)
+    {
+        if (r.delta < 0.0 && !qFuzzyIsNull(r.delta))
+            r.side = -1;
+        else if (!qFuzzyIsNull(r.delta))
+            r.side = +1;
+        else
+            r.side = seen++ < onFreq / 2 ? -1 : +1;
+    }
+}
+
 void StationModel::sortRows()
 {
+    if (m_dialOrder)
+    {
+        // ascending frequency; on the same frequency on-air stations first,
+        // then by start time
+        std::stable_sort(m_rows.begin(), m_rows.end(), [](const Row& a, const Row& b) {
+            if (!qFuzzyCompare(a.entry.kHz + 1.0, b.entry.kHz + 1.0))
+                return a.entry.kHz < b.entry.kHz;
+            const int ra = rank(a.status), rb = rank(b.status);
+            if (ra != rb)
+                return ra < rb;
+            return a.entry.startMin < b.entry.startMin;
+        });
+        shadeGroups();
+        return;
+    }
     std::stable_sort(m_rows.begin(), m_rows.end(), [](const Row& a, const Row& b) {
         const int ra = rank(a.status), rb = rank(b.status);
         if (ra != rb)
@@ -97,6 +176,7 @@ void StationModel::sortRows()
             return a.entry.startMin < b.entry.startMin;
         return a.entry.station < b.entry.station;
     });
+    shadeGroups();
 }
 
 int StationModel::rowCount(const QModelIndex& parent) const
@@ -201,9 +281,10 @@ QVariant StationModel::data(const QModelIndex& index, int role) const
         case ColDelta:
         {
             if (qFuzzyIsNull(r.delta))
-                return QStringLiteral("0");
-            return QStringLiteral("%1%2").arg(r.delta > 0 ? QStringLiteral("+") : QString())
-                                          .arg(r.delta, 0, 'f', 1);
+                return QStringLiteral("\u25CF");              // on the VFO
+            return QStringLiteral("%1 %2").arg(r.delta > 0 ? QStringLiteral("\u25B2")     // above
+                                                            : QStringLiteral("\u25BC"))    // below
+                                           .arg(qAbs(r.delta), 0, 'f', 1);
         }
         case ColFrequency: return QString::number(e.kHz, 'f', e.kHz == qRound(e.kHz) ? 0 : 3);
         case ColStatus:    return Schedule::statusText(r.status);
@@ -242,6 +323,11 @@ QVariant StationModel::data(const QModelIndex& index, int role) const
         return QVariant();
 
     case Qt::ForegroundRole:
+        if (m_dialOrder && std::abs(r.delta) <= m_highlightKHz + 1e-6)
+            return QBrush(QColor(0xf8, 0x51, 0x49));     // within reach of the VFO
+        if (index.column() == ColDelta && !qFuzzyIsNull(r.delta)
+            && r.status != Schedule::OnAir::No && r.status != Schedule::OnAir::Inactive)
+            return QBrush(r.delta > 0 ? QColor(0x79, 0xc0, 0xff) : QColor(0xff, 0xa6, 0x57));
         if (r.status == Schedule::OnAir::No || r.status == Schedule::OnAir::Inactive)
             return QBrush(QGuiApplication::palette().color(QPalette::Disabled, QPalette::Text));
         if (r.status == Schedule::OnAir::Yes && index.column() == ColStatus)
@@ -258,10 +344,19 @@ QVariant StationModel::data(const QModelIndex& index, int role) const
         default:           return data(index, Qt::DisplayRole);
         }
 
+    case Qt::BackgroundRole:
+        if (r.shaded)
+            return QBrush(QGuiApplication::palette().color(QPalette::AlternateBase));
+        return QVariant();
+
     case StatusRole:
         return int(r.status);
     case OnAirRankRole:
         return rank(r.status);
+    case DeltaRole:
+        return r.delta;
+    case DialSideRole:
+        return r.side;
     }
     return QVariant();
 }

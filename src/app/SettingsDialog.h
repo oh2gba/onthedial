@@ -38,6 +38,7 @@ struct AppSettings
     bool onAirOnly = false;
     bool followRig = true;
     bool alwaysOnTop = false;
+    bool dialView = true;
 
     void load(const StationDb* db);
     void save(StationDb* db) const;

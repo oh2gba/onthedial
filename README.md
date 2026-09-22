@@ -7,7 +7,7 @@ VFO of your receiver through Hamlib's `rigctld` and shows which stations are
 scheduled on or near that frequency right now: broadcasters, utility stations,
 time signals, and oddities such as *The Buzzer* on 4625 kHz.
 
-![On The Dial following the rig](doc/screenshot.png)
+![On The Dial on 11775 kHz, the tuned frequency in the middle](doc/screenshot.png)
 
 ## Download
 
@@ -31,7 +31,11 @@ How to hook up the radio: <https://onthedial.oh2gba.eu/rig.html>
   Evaluated against UTC, including broadcasts crossing midnight, weekday rules
   such as `Mo-Fr`, `1.Sa`, `Last7`, `15Sep`, `MF-15`, validity dates and
   summer/winter-only entries.
-- Adjustable search width (± kHz), *On air only* toggle, free-text filter.
+- Dial view (default): the tuned frequency stays in the middle of the list, lower
+  frequencies above it and higher ones below, like a tuning scale. Entries within the
+  chosen ± kHz range are shown in red. *View → Dial view* switches back to the plain
+  list, where the ± kHz value limits what is shown instead.
+- *On air only* toggle, free-text filter. Column widths follow the window width.
 - Search: type "buzzer" and the whole database is searched, on-air hits first with
   their distance from the tuned frequency. Double-click a row to tune the rig to it
   (frequency and mode via rigctld); without a rig the view jumps there instead.
