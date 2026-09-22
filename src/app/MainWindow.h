@@ -70,7 +70,12 @@ private:
     QStringList enabledSources() const;
     void updateCountLabel();
     void centreOnMarker();
-    void layoutTables();
+    void headerContextMenu(const QPoint& pos);
+    void saveColumns();
+    void scaleColumns(int width);
+    void fitColumns();
+    bool m_columnsFitted = false;
+    bool m_dialActive = false;    // the list is currently in dial order (no search text)
     void setupTable(QTableView* table);
     void updateToleranceHint();
     QModelIndex sourceIndex(const QModelIndex& proxyIndex) const;
@@ -100,11 +105,8 @@ private:
     QDoubleSpinBox* m_tolerance = nullptr;
     QCheckBox* m_onAirOnly = nullptr;
     QLineEdit* m_filter = nullptr;
-    QTableView* m_table = nullptr;        // nearest-first list, or the part below the VFO
-    QTableView* m_tableAbove = nullptr;   // dial view: the part at and above the VFO
-    StationFilter* m_proxyAbove = nullptr;
+    QTableView* m_table = nullptr;
     QTableView* m_menuTable = nullptr;
-    QWidget* m_tables = nullptr;
     QAction* m_dialAction = nullptr;
     QLabel* m_rigStatus = nullptr;
     QLabel* m_dbStatus = nullptr;

@@ -34,6 +34,15 @@
   <categories><category>HamRadio</category><category>Network</category></categories>
   <keywords><keyword>shortwave</keyword><keyword>SWL</keyword><keyword>rigctld</keyword><keyword>EiBi</keyword></keywords>
   <releases>
+    <release version="1.3.0" date="2026-09-22">
+      <description>
+        <ul>
+          <li>Dial view refined: one continuous table, blank rows at the ends of the list so the tuned frequency always stays in the middle, no row selection, a short blink on the row sent to the radio</li>
+          <li>Right-click on the column header to choose the columns, double-click to fit them to the data and the window</li>
+          <li>Search returns every match; Escape clears the search; double-clicking a result keeps the search open</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.2.0" date="2026-09-22">
       <description>
         <ul>

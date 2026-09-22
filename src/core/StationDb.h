@@ -37,9 +37,9 @@ public:
     // frequency, ordered by frequency, leaving out the given sources.
     StationList around(double centreKHz, int count, const QStringList& excludeSources = QStringList()) const;
     // Case-insensitive substring search on station name, language, site and
-    // country code, optionally limited to some sources.
+    // country code, optionally limited to some sources. limit <= 0: every match.
     StationList search(const QString& text, const QStringList& excludeSources = QStringList(),
-                       int limit = 1000) const;
+                       int limit = 0) const;
     // Every source id present, with its number of entries.
     QList<QPair<QString, int>> sourceCounts() const;
 

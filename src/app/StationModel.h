@@ -47,8 +47,15 @@ public:
     void setEntries(const StationList& entries, double centreKHz);
     // Dial order: ascending frequency, the rows nearest the VFO in the middle.
     void setDialEntries(const StationList& entries, double centreKHz);
+    // dial view: this many blank rows above and below the real ones, so
+    // the VFO can stay in the middle even at the ends of the list
+    void setPadding(int rows) { m_padding = rows; }
+    bool isBlank(int row) const { return row >= 0 && row < m_rows.size() && m_rows[row].blank; }
+    int entryCount() const;
     // dial view: rows this close to the VFO are highlighted
     void setHighlightKHz(double kHz);
+    // briefly tint the row of this entry (0 clears); survives list reloads
+    void setFlash(qint64 entryId);
     void setCentre(double centreKHz);
     void refreshStatus(const QDateTime& utc = QDateTime::currentDateTimeUtc());
     int onAirCount() const;
@@ -68,6 +75,7 @@ private:
         double delta = 0.0;
         bool shaded = false;    // background shade alternates per frequency
         int side = 0;           // which half of the dial view shows the row
+        bool blank = false;     // padding, not a station
     };
     void shadeGroups();
     bool m_dialOrder = false;
@@ -82,5 +90,8 @@ private:
     QVector<Row> m_rows;
     double m_centre = 0.0;
     double m_highlightKHz = 0.0;
+    int m_padding = 0;
+    qint64 m_flashId = 0;
+    int flashRow() const;
     QDateTime m_lastEval;
 };

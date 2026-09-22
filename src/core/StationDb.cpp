@@ -388,7 +388,9 @@ StationList StationDb::search(const QString& text, const QStringList& sources, i
             marks << QStringLiteral("?");
         sql += QStringLiteral(" AND source NOT IN (%1)").arg(marks.join(QLatin1Char(',')));
     }
-    sql += QStringLiteral(" ORDER BY khz, start_min LIMIT ?");
+    sql += QStringLiteral(" ORDER BY khz, start_min");
+    if (limit > 0)
+        sql += QStringLiteral(" LIMIT ?");
     q.prepare(sql);
     QString pattern = text.trimmed();
     pattern.replace(QLatin1Char('\\'), QLatin1String("\\\\"))
@@ -401,7 +403,8 @@ StationList StationDb::search(const QString& text, const QStringList& sources, i
     q.addBindValue(text.trimmed().toUpper());
     for (const QString& src : sources)
         q.addBindValue(src);
-    q.addBindValue(limit);
+    if (limit > 0)
+        q.addBindValue(limit);
     if (q.exec())
         while (q.next())
             out.push_back(fromRecord(q));

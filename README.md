@@ -35,7 +35,8 @@ How to hook up the radio: <https://onthedial.oh2gba.eu/rig.html>
   frequencies above it and higher ones below, like a tuning scale. Entries within the
   chosen ± kHz range are shown in red. *View → Dial view* switches back to the plain
   list, where the ± kHz value limits what is shown instead.
-- *On air only* toggle, free-text filter. Column widths follow the window width.
+- *On air only* toggle, free-text filter (Escape clears it). Column widths follow the
+  window width; right-click the header to choose the columns, double-click it to fit them.
 - Search: type "buzzer" and the whole database is searched, on-air hits first with
   their distance from the tuned frequency. Double-click a row to tune the rig to it
   (frequency and mode via rigctld); without a rig the view jumps there instead.

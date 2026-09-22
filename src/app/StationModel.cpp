@@ -58,6 +58,26 @@ void StationModel::setHighlightKHz(double kHz)
                          { Qt::ForegroundRole });
 }
 
+int StationModel::flashRow() const
+{
+    if (m_flashId == 0)
+        return -1;
+    for (int i = 0; i < m_rows.size(); ++i)
+        if (m_rows[i].entry.id == m_flashId)
+            return i;
+    return -1;
+}
+
+void StationModel::setFlash(qint64 entryId)
+{
+    const int before = flashRow();
+    m_flashId = entryId;
+    const int after = flashRow();
+    for (int row : {before, after})
+        if (row >= 0)
+            emit dataChanged(index(row, 0), index(row, ColumnCount - 1), { Qt::BackgroundRole });
+}
+
 void StationModel::setDialEntries(const StationList& entries, double centreKHz)
 {
     beginResetModel();
@@ -74,8 +94,25 @@ void StationModel::setDialEntries(const StationList& entries, double centreKHz)
         r.status = Schedule::status(e, m_lastEval);
         m_rows.push_back(r);
     }
+    // blank rows at both ends; their frequencies keep them there when sorting
+    for (int i = 0; i < m_padding; ++i)
+    {
+        Row pad;
+        pad.blank = true;
+        pad.entry.kHz = -1.0;
+        pad.delta = -centreKHz - 1.0;
+        m_rows.push_back(pad);
+        pad.entry.kHz = 1e12;
+        pad.delta = 1e12 - centreKHz;
+        m_rows.push_back(pad);
+    }
     sortRows();
     endResetModel();
+}
+
+int StationModel::entryCount() const
+{
+    return int(std::count_if(m_rows.cbegin(), m_rows.cend(), [](const Row& r) { return !r.blank; }));
 }
 
 void StationModel::setCentre(double centreKHz)
@@ -95,6 +132,8 @@ void StationModel::refreshStatus(const QDateTime& utc)
     bool changed = false;
     for (Row& r : m_rows)
     {
+        if (r.blank)
+            continue;
         const Schedule::OnAir s = Schedule::status(r.entry, utc);
         if (s != r.status)
         {
@@ -112,7 +151,7 @@ void StationModel::refreshStatus(const QDateTime& utc)
 int StationModel::onAirCount() const
 {
     return int(std::count_if(m_rows.cbegin(), m_rows.cend(), [](const Row& r) {
-        return r.status == Schedule::OnAir::Yes;
+        return !r.blank && r.status == Schedule::OnAir::Yes;
     }));
 }
 
@@ -127,7 +166,7 @@ void StationModel::shadeGroups()
             shade = !shade;
             last = r.entry.kHz;
         }
-        r.shaded = shade;
+        r.shaded = shade && !r.blank;
     }
 
     // rows exactly on the VFO are shared between the two halves, the
@@ -273,6 +312,18 @@ QVariant StationModel::data(const QModelIndex& index, int role) const
     const Row& r = m_rows[index.row()];
     const StationEntry& e = r.entry;
 
+    if (r.blank)
+    {
+        switch (role)
+        {
+        case DialSideRole:  return r.side;
+        case DeltaRole:     return r.delta;
+        case OnAirRankRole: return -1;   // never filtered out
+        case StatusRole:    return int(Schedule::OnAir::No);
+        default:            return QVariant();
+        }
+    }
+
     switch (role)
     {
     case Qt::DisplayRole:
@@ -345,6 +396,8 @@ QVariant StationModel::data(const QModelIndex& index, int role) const
         }
 
     case Qt::BackgroundRole:
+        if (m_flashId != 0 && e.id == m_flashId)
+            return QBrush(QColor(0xf8, 0x51, 0x49, 0x50));   // the row just sent to the rig
         if (r.shaded)
             return QBrush(QGuiApplication::palette().color(QPalette::AlternateBase));
         return QVariant();
