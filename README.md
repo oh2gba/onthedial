@@ -49,6 +49,10 @@ How to hook up the radio: <https://onthedial.oh2gba.eu/rig.html>
 - Data is stored in a local SQLite database and refreshed at most once a week.
   Refresh requests use `If-Modified-Since`, so an unchanged file costs a single
   tiny 304 response.
+- Once a day the program asks the project page for the current version and shows a small
+  note in the status bar when a newer one exists. The request carries only the program's
+  version and platform; the server counts these calls per day, version and platform and
+  keeps no addresses or other data. File → Settings switches the check off.
 - Everything, including settings, window size and column layout, lives in one SQLite
   file. `--data-dir <dir>` puts it wherever you like (portable mode).
 
@@ -126,19 +130,8 @@ metainfo in `data/`.
 
 ## Web page and source
 
+Web page: <https://onthedial.oh2gba.eu/>
 Source code: <https://github.com/oh2gba/onthedial>
-
-
-The project page lives at <https://onthedial.oh2gba.eu/>. Its files are in
-`site/` and `./deploy.sh` uploads them over FTP with TLS. The credentials are
-read from `.env`, which is git-ignored and must stay that way:
-
-```
-FTP_HOST=...
-FTP_USER=...
-FTP_PASS='...'
-SITE_HOST=onthedial.oh2gba.eu
-```
 
 ## Project layout
 
@@ -148,7 +141,6 @@ src/app/    Qt Widgets user interface
 tests/      QtTest unit tests for the core
 docker/     build image (Debian trixie + Qt 6)
 data/       desktop entry and icon
-site/       project web page, deployed with ./deploy.sh
 third_party/miniz   zip extraction (MIT), bundled
 ```
 

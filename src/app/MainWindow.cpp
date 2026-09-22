@@ -82,6 +82,8 @@ MainWindow::MainWindow(const QString& dataDir, double startKHz, QWidget* parent)
     m_updater->addSource(new EibiSource(m_db, m_nam, this));
     m_updater->addSource(new HfccSource(m_db, m_nam, this));
     m_updater->addSource(new AokiSource(m_db, m_nam, this));
+    m_updateCheck = new UpdateCheck(m_db, m_nam, this);
+    connect(m_updateCheck, &UpdateCheck::finished, this, &MainWindow::showUpdateResult);
     m_rig = new RigClient(this);
     m_launcher = new RigctldLauncher(this);
     connect(m_launcher, &RigctldLauncher::started, this, [this]() {
@@ -149,9 +151,52 @@ MainWindow::MainWindow(const QString& dataDir, double startKHz, QWidget* parent)
 
     applyLauncher();
     m_rig->start();
+    QTimer::singleShot(3000, this, [this]() { startUpdateCheck(false); });
 }
 
-MainWindow::~MainWindow() = default;
+void MainWindow::startUpdateCheck(bool force)
+{
+    if (!m_settings.updateCheck)
+    {
+        m_updateLabel->clear();
+        return;
+    }
+    m_updateCheck->run(QUrl(m_settings.updateUrl), force);
+}
+
+void MainWindow::showUpdateResult(const UpdateCheck::Result& r)
+{
+    if (!r.valid)
+    {
+        m_updateLabel->clear();
+        return;
+    }
+    QString text;
+    if (r.newer)
+        text = tr("Version %1 available").arg(r.latest);
+    if (!r.message.isEmpty())
+        text += (text.isEmpty() ? QString() : QStringLiteral(" · ")) + r.message.toHtmlEscaped();
+    if (text.isEmpty())
+    {
+        m_updateLabel->clear();
+        return;
+    }
+    if (!r.url.isEmpty())
+        text = QStringLiteral("<a href=\"%1\">%2</a>").arg(r.url.toHtmlEscaped(), text);
+    m_updateLabel->setText(text);
+    m_updateLabel->setToolTip(r.newer ? tr("You are running %1. Click to open the download page.")
+                                            .arg(QCoreApplication::applicationVersion())
+                                      : QString());
+}
+
+MainWindow::~MainWindow()
+{
+    // The socket's destructor emits disconnected(); by then the widgets that
+    // listen to the rig state are gone, so cut the connections first.
+    m_rig->disconnect(this);
+    m_rig->stop();
+    m_launcher->stop();
+}
 
 void MainWindow::applyLauncher()
 {
@@ -182,6 +227,15 @@ void MainWindow::buildUi()
     // --- menu ---------------------------------------------------------
     QMenu* file = menuBar()->addMenu(tr("&File"));
     m_updateAction = file->addAction(tr("&Update databases now"), this, &MainWindow::updateDatabases);
+    file->addAction(tr("Check for a &new version"), this, [this]() {
+        if (!m_settings.updateCheck)
+        {
+            statusBar()->showMessage(tr("Version check is switched off in Settings"), 5000);
+            return;
+        }
+        statusBar()->showMessage(tr("Checking for a new version ..."), 5000);
+        startUpdateCheck(true);
+    });
     file->addAction(tr("&Settings..."), this, &MainWindow::openSettings);
     file->addSeparator();
     file->addAction(tr("&Quit"), QKeySequence::Quit, qApp, &QApplication::quit);
@@ -326,7 +380,11 @@ void MainWindow::buildUi()
     // --- status bar ---------------------------------------------------
     m_rigStatus = new QLabel;
     m_dbStatus = new QLabel;
+    m_updateLabel = new QLabel;
+    m_updateLabel->setOpenExternalLinks(true);
+    m_updateLabel->setTextFormat(Qt::RichText);
     statusBar()->addWidget(m_rigStatus, 1);
+    statusBar()->addPermanentWidget(m_updateLabel);
     statusBar()->addPermanentWidget(m_dbStatus);
 
     resize(1000, 600);
@@ -487,12 +545,14 @@ void MainWindow::updateCountLabel()
 
 QStringList MainWindow::enabledSources() const
 {
-    QStringList ids;
+    // Returns the sources to leave out: downloadable ones that are switched
+    // off. Everything else in the database is shown, the personal list and
+    // any list that was put there by other means included.
+    QStringList disabled;
     for (ScheduleSource* src : m_updater->sources())
-        if (src->isEnabled())
-            ids << src->id();
-    ids << userSourceId();   // the personal list is always shown
-    return ids;
+        if (!src->isEnabled())
+            disabled << src->id();
+    return disabled;
 }
 
 void MainWindow::addMyStation()
@@ -604,6 +664,13 @@ void MainWindow::updateDbStatus()
                    .arg(updated.isValid() ? updated.toString(QStringLiteral("yyyy-MM-dd HH:mm"))
                                           : tr("never"));
     }
+    QStringList known;
+    for (ScheduleSource* src : m_updater->sources())
+        known << src->id();
+    known << userSourceId();
+    for (const auto& sc : m_db->sourceCounts())
+        if (!known.contains(sc.first))
+            parts << QStringLiteral("%1: %2").arg(sc.first.toUpper()).arg(sc.second);
     m_dbStatus->setText(parts.isEmpty() ? tr("No sources enabled") : parts.join(QStringLiteral("  |  ")));
     m_dbStatus->setToolTip(tip.trimmed());
 }
@@ -706,6 +773,10 @@ void MainWindow::openSettings()
     m_settings.toleranceKHz = updated.toleranceKHz;
     m_settings.ituRegion = updated.ituRegion;
     m_settings.refreshDays = updated.refreshDays;
+    const bool updateChanged = updated.updateCheck != m_settings.updateCheck
+                               || updated.updateUrl != m_settings.updateUrl;
+    m_settings.updateCheck = updated.updateCheck;
+    m_settings.updateUrl = updated.updateUrl;
     m_settings.eibiUrl = updated.eibiUrl;
     m_settings.hfccUrl = updated.hfccUrl;
     m_settings.aokiUrl = updated.aokiUrl;
@@ -732,6 +803,8 @@ void MainWindow::openSettings()
     refreshLookup();
     if (m_updater->anyStale(m_settings.refreshDays))
         updateDatabases();
+    if (updateChanged)
+        startUpdateCheck(true);
 }
 
 void MainWindow::tick()

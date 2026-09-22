@@ -34,6 +34,15 @@
   <categories><category>HamRadio</category><category>Network</category></categories>
   <keywords><keyword>shortwave</keyword><keyword>SWL</keyword><keyword>rigctld</keyword><keyword>EiBi</keyword></keywords>
   <releases>
+    <release version="1.1.0" date="2026-09-22">
+      <description>
+        <ul>
+          <li>Optional daily check for a new version, shown as a small note in the status bar</li>
+          <li>Any additional station list found in the database is shown alongside the downloaded ones</li>
+          <li>Fixed a crash on exit</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.2" date="2026-09-20">
       <description><p>Builds cleanly against Qt 6.10 and newer.</p></description>
     </release>

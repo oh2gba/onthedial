@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(onthedial VERSION 1.0.2 LANGUAGES C CXX)
+project(onthedial VERSION 1.1.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -43,6 +43,7 @@ add_library(otd_core STATIC
   src/core/SigidWiki.h       src/core/SigidWiki.cpp
   src/core/UserList.h        src/core/UserList.cpp
   src/core/BandPlan.h        src/core/BandPlan.cpp
+  src/core/UpdateCheck.h     src/core/UpdateCheck.cpp
   src/core/core.qrc
 )
 target_include_directories(otd_core PUBLIC src)

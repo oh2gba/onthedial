@@ -24,7 +24,8 @@ const char* kKeys[] = {"rig.host", "rig.port", "rig.pollMs", "view.toleranceKHz"
                        "view.followRig", "view.alwaysOnTop", "data.refreshDays", "data.eibiUrl",
                        "data.hfccUrl", "data.aokiUrl", "data.eibiEnabled", "data.hfccEnabled",
                        "data.aokiEnabled", "rigctld.launch", "rigctld.path", "rigctld.model",
-                       "rigctld.device", "rigctld.baud", "rigctld.extra", "view.ituRegion"};
+                       "rigctld.device", "rigctld.baud", "rigctld.extra", "view.ituRegion",
+                       "update.check", "update.url"};
 QString key(int i) { return QStringLiteral("settings.") + QLatin1String(kKeys[i]); }
 bool toBool(const QString& v, bool fallback)
 {
@@ -62,6 +63,8 @@ void AppSettings::load(const StationDb* db)
     rigBaud = int(num(18, rigBaud));
     rigctldExtra = str(19, rigctldExtra);
     ituRegion = qBound(1, int(num(20, ituRegion)), 3);
+    updateCheck = toBool(str(21, QString()), updateCheck);
+    updateUrl = str(22, updateUrl);
 }
 
 void AppSettings::save(StationDb* db) const
@@ -74,7 +77,7 @@ void AppSettings::save(StationDb* db) const
         QString::number(eibiEnabled ? 1 : 0), QString::number(hfccEnabled ? 1 : 0),
         QString::number(aokiEnabled ? 1 : 0), QString::number(launchRigctld ? 1 : 0),
         rigctldPath, QString::number(rigModel), rigDevice, QString::number(rigBaud),
-        rigctldExtra, QString::number(ituRegion)};
+        rigctldExtra, QString::number(ituRegion), QString::number(updateCheck ? 1 : 0), updateUrl};
     for (int i = 0; i < int(sizeof(kKeys) / sizeof(kKeys[0])); ++i)
         db->setMeta(key(i), values[i]);
 }
@@ -174,6 +177,15 @@ SettingsDialog::SettingsDialog(const AppSettings& cur, QWidget* parent)
     m_refreshDays->setValue(cur.refreshDays);
     dataForm->addRow(tr("Refresh when older than:"), m_refreshDays);
 
+    m_updateOn = new QCheckBox(tr("Check for a new version once a day"));
+    m_updateOn->setChecked(cur.updateCheck);
+    m_updateOn->setToolTip(tr("Asks the project page for the current version. The request contains "
+                              "only this program's version and platform; nothing else is sent or stored."));
+    m_updateUrl = new QLineEdit(cur.updateUrl);
+    m_updateUrl->setEnabled(cur.updateCheck);
+    connect(m_updateOn, &QCheckBox::toggled, m_updateUrl, &QLineEdit::setEnabled);
+    dataForm->addRow(m_updateOn, m_updateUrl);
+
     auto addSource = [&](const QString& label, bool enabled, const QString& url,
                          QCheckBox** box, QLineEdit** edit) {
         *box = new QCheckBox(label);
@@ -261,6 +273,8 @@ AppSettings SettingsDialog::settings(const AppSettings& base) const
     s.pollIntervalMs = m_poll->value();
     s.toleranceKHz = m_tolerance->value();
     s.ituRegion = m_region->currentData().toInt();
+    s.updateCheck = m_updateOn->isChecked();
+    s.updateUrl = m_updateUrl->text().trimmed();
     s.refreshDays = m_refreshDays->value();
     s.eibiUrl = m_eibiUrl->text().trimmed();
     s.hfccUrl = m_hfccUrl->text().trimmed();

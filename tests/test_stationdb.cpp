@@ -47,8 +47,10 @@ private slots:
         QCOMPARE(found[0].kHz, 4625.0);
         QCOMPARE(db.search("100%").size(), 0);
         QCOMPARE(db.search("RUS").size(), 4);                       // ITU code match
-        QCOMPARE(db.search("buzz", {"aoki"}).size(), 0);           // source filter
-        QCOMPARE(db.search("buzz", {"eibi", "aoki"}).size(), 1);
+        QCOMPARE(db.search("buzz", {"eibi"}).size(), 0);           // source excluded
+        QCOMPARE(db.search("buzz", {"aoki"}).size(), 1);
+        QCOMPARE(db.sourceCounts().size(), 1);
+        QCOMPARE(db.sourceCounts().first().second, 4);
 
         // replacing drops the old rows
         QVERIFY(db.replaceSource("eibi", {entry(6000, "Only one")}));

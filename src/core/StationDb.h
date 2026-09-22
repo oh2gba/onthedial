@@ -29,14 +29,16 @@ public:
     StationList entriesOf(const QString& source) const;
     int count(const QString& source = QString()) const;
 
-    // All entries with |kHz - centre| <= tolerance, nearest first. An empty
-    // source list means every source.
+    // All entries with |kHz - centre| <= tolerance, nearest first, leaving
+    // out the given sources.
     StationList lookup(double centreKHz, double toleranceKHz,
-                       const QStringList& sources = QStringList()) const;
+                       const QStringList& excludeSources = QStringList()) const;
     // Case-insensitive substring search on station name, language, site and
     // country code, optionally limited to some sources.
-    StationList search(const QString& text, const QStringList& sources = QStringList(),
+    StationList search(const QString& text, const QStringList& excludeSources = QStringList(),
                        int limit = 1000) const;
+    // Every source id present, with its number of entries.
+    QList<QPair<QString, int>> sourceCounts() const;
 
     QString meta(const QString& key, const QString& fallback = QString()) const;
     bool setMeta(const QString& key, const QString& value);

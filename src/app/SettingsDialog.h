@@ -19,6 +19,8 @@ struct AppSettings
     int pollIntervalMs = 500;
     double toleranceKHz = 5.0;
     int ituRegion = 1;      // 1 Europe/Africa, 2 Americas, 3 Asia/Pacific
+    bool updateCheck = true;
+    QString updateUrl = QStringLiteral("https://onthedial.oh2gba.eu/version.php");
     int refreshDays = 7;
     QString eibiUrl = QStringLiteral("http://www.eibispace.de/dx/");
     QString hfccUrl = QStringLiteral("http://www.hfcc.org/data/");
@@ -55,6 +57,8 @@ private:
     QSpinBox* m_poll;
     QDoubleSpinBox* m_tolerance;
     QComboBox* m_region;
+    QCheckBox* m_updateOn;
+    QLineEdit* m_updateUrl;
     QSpinBox* m_refreshDays;
     QCheckBox* m_eibiOn;
     QCheckBox* m_hfccOn;

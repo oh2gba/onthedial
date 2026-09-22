@@ -317,7 +317,7 @@ StationList StationDb::lookup(double centreKHz, double toleranceKHz,
         QStringList marks;
         for (int i = 0; i < sources.size(); ++i)
             marks << QStringLiteral("?");
-        sql += QStringLiteral(" AND source IN (%1)").arg(marks.join(QLatin1Char(',')));
+        sql += QStringLiteral(" AND source NOT IN (%1)").arg(marks.join(QLatin1Char(',')));
     }
     sql += QStringLiteral(" ORDER BY ABS(khz - ?), start_min");
     q.prepare(sql);
@@ -346,7 +346,7 @@ StationList StationDb::search(const QString& text, const QStringList& sources, i
         QStringList marks;
         for (int i = 0; i < sources.size(); ++i)
             marks << QStringLiteral("?");
-        sql += QStringLiteral(" AND source IN (%1)").arg(marks.join(QLatin1Char(',')));
+        sql += QStringLiteral(" AND source NOT IN (%1)").arg(marks.join(QLatin1Char(',')));
     }
     sql += QStringLiteral(" ORDER BY khz, start_min LIMIT ?");
     q.prepare(sql);
@@ -365,6 +365,17 @@ StationList StationDb::search(const QString& text, const QStringList& sources, i
     if (q.exec())
         while (q.next())
             out.push_back(fromRecord(q));
+    return out;
+}
+
+QList<QPair<QString, int>> StationDb::sourceCounts() const
+{
+    QList<QPair<QString, int>> out;
+    QSqlDatabase db = QSqlDatabase::database(m_connectionName);
+    QSqlQuery q(db);
+    if (q.exec(QStringLiteral("SELECT source, COUNT(*) FROM stations GROUP BY source ORDER BY source")))
+        while (q.next())
+            out.append({q.value(0).toString(), q.value(1).toInt()});
     return out;
 }
 

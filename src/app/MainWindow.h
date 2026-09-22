@@ -3,6 +3,7 @@
 
 #include "SettingsDialog.h"
 #include "core/BandPlan.h"
+#include "core/UpdateCheck.h"
 #include <QMainWindow>
 
 class QCheckBox;
@@ -57,6 +58,8 @@ private:
     void buildUi();
     void applySettings();
     void applyLauncher();
+    void startUpdateCheck(bool force);
+    void showUpdateResult(const UpdateCheck::Result& r);
     void setCentreKHz(double kHz, bool fromRig);
     void refreshLookup();
     void updateHeader();
@@ -70,6 +73,8 @@ private:
     StationDb* m_db = nullptr;
     QNetworkAccessManager* m_nam = nullptr;
     Updater* m_updater = nullptr;
+    UpdateCheck* m_updateCheck = nullptr;
+    QLabel* m_updateLabel = nullptr;
     RigClient* m_rig = nullptr;
     RigctldLauncher* m_launcher = nullptr;
     StationModel* m_model = nullptr;
