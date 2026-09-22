@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QSqlError>
+#include <QRegularExpression>
 #include <QSqlQuery>
 #include <QUuid>
 #include <QVariant>
@@ -375,12 +376,27 @@ StationList StationDb::around(double centreKHz, int count, const QStringList& so
 StationList StationDb::search(const QString& text, const QStringList& sources, int limit) const
 {
     StationList out;
+    // every word must be found somewhere in the entry ("bbc english" gives
+    // the BBC's English programmes); a leading "!" turns a word into an
+    // exclusion ("!china english": English, but not from China)
+    QStringList words;
+    for (const QString& w : text.split(QRegularExpression(QStringLiteral("\\s+")), Qt::SkipEmptyParts))
+        if (w != QLatin1String("!"))
+            words << w;
+    if (words.isEmpty())
+        return out;
     QSqlDatabase db = QSqlDatabase::database(m_connectionName);
     QSqlQuery q(db);
-    QString sql = QStringLiteral("SELECT %1 FROM stations WHERE (station LIKE ? ESCAPE '\\'"
-                                 " OR lang_text LIKE ? ESCAPE '\\' OR site_text LIKE ? ESCAPE '\\'"
-                                 " OR itu = ?)")
-                      .arg(QLatin1String(kSelectColumns));
+    QString sql = QStringLiteral("SELECT %1 FROM stations WHERE 1=1").arg(QLatin1String(kSelectColumns));
+    for (const QString& w : words)
+        // IFNULL: a NULL column would make a negated group NULL, i.e. false
+        sql += QStringLiteral(" AND %1(IFNULL(station,'') LIKE ? ESCAPE '\\'"
+                              " OR IFNULL(lang_text,'') LIKE ? ESCAPE '\\'"
+                              " OR IFNULL(site_text,'') LIKE ? ESCAPE '\\'"
+                              " OR IFNULL(remarks,'') LIKE ? ESCAPE '\\'"
+                              " OR IFNULL(itu,'') = ? OR IFNULL(itu,'') IN (SELECT code FROM codes"
+                              " WHERE kind='country' AND name LIKE ? ESCAPE '\\'))")
+                   .arg(w.startsWith(QLatin1Char('!')) ? QStringLiteral("NOT ") : QString());
     if (!sources.isEmpty())
     {
         QStringList marks;
@@ -392,15 +408,20 @@ StationList StationDb::search(const QString& text, const QStringList& sources, i
     if (limit > 0)
         sql += QStringLiteral(" LIMIT ?");
     q.prepare(sql);
-    QString pattern = text.trimmed();
-    pattern.replace(QLatin1Char('\\'), QLatin1String("\\\\"))
-           .replace(QLatin1Char('%'), QLatin1String("\\%"))
-           .replace(QLatin1Char('_'), QLatin1String("\\_"));
-    const QString like = QLatin1Char('%') + pattern + QLatin1Char('%');
-    q.addBindValue(like);
-    q.addBindValue(like);
-    q.addBindValue(like);
-    q.addBindValue(text.trimmed().toUpper());
+    for (QString word : words)
+    {
+        if (word.startsWith(QLatin1Char('!')))
+            word.remove(0, 1);
+        QString pattern = word;
+        pattern.replace(QLatin1Char('\\'), QLatin1String("\\\\"))
+               .replace(QLatin1Char('%'), QLatin1String("\\%"))
+               .replace(QLatin1Char('_'), QLatin1String("\\_"));
+        const QString like = QLatin1Char('%') + pattern + QLatin1Char('%');
+        for (int i = 0; i < 4; ++i)
+            q.addBindValue(like);
+        q.addBindValue(word.toUpper());
+        q.addBindValue(like);
+    }
     for (const QString& src : sources)
         q.addBindValue(src);
     if (limit > 0)

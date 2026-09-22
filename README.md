@@ -37,13 +37,15 @@ How to hook up the radio: <https://onthedial.oh2gba.eu/rig.html>
   list, where the ± kHz value limits what is shown instead.
 - *On air only* toggle, free-text filter (Escape clears it). Column widths follow the
   window width; right-click the header to choose the columns, double-click it to fit them.
-- Search: type "buzzer" and the whole database is searched, on-air hits first with
+- Search: type "buzzer" and the whole database is searched. Several words must all match
+  ("bbc english"), a leading "!" excludes a word ("!china english"). On-air hits first with
   their distance from the tuned frequency. Double-click a row to tune the rig to it
   (frequency and mode via rigctld); without a rig the view jumps there instead.
 - Mode column (AM, USB, LSB, CW, DRM, RTTY, FAX, HFDL) derived from each source's markers.
 - Band indicator: the header shows the allocation of the tuned frequency (49 m broadcast, 40 m amateur,
   aeronautical mobile, maritime mobile, standard time) for the ITU region chosen in Settings.
-  The table lives in `data/bandplan.json`.
+  Well known unlicensed uses are named too, after the official allocation: pirate and free
+  radio bands, the 11 m freeband. The table lives in `data/bandplan.json`.
 - Personal list: add your own identifications (Stations menu or right-click), edit, delete,
   import and export as CSV. They appear with source "Mine" and live in the same database.
 - Right-click a row for the matching sigidwiki.com page of the mode, or a wiki search for the station.

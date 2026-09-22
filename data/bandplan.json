@@ -1,5 +1,5 @@
 {
-  "comment": "HF allocations for the band indicator. Frequencies in kHz. 'regions' limits an entry to ITU regions (1 = Europe/Africa/Middle East/Russia, 2 = Americas, 3 = Asia/Pacific); missing means worldwide. Sources: ITU Radio Regulations Article 5 (broadcasting, aeronautical, maritime, standard frequency bands) and IARU Region 1/2/3 HF band plans; the NDB beacon range follows the ITU radionavigation allocations 190-535 kHz.",
+  "comment": "HF allocations for the band indicator. Frequencies in kHz. 'regions' limits an entry to ITU regions (1 = Europe/Africa/Middle East/Russia, 2 = Americas, 3 = Asia/Pacific); missing means worldwide. Sources: ITU Radio Regulations Article 5 (broadcasting, aeronautical, maritime, standard frequency bands) and IARU Region 1/2/3 HF band plans; the NDB beacon range follows the ITU radionavigation allocations 190-535 kHz. Entries of kind 'informal' are not allocations at all but well known unlicensed uses (pirate and free radio bands, 11 m freeband) as commonly reported by listeners; kind 'ism' marks the HF ISM bands. They are listed last so that the official allocation is named first.",
   "bands": [
     {"from": 135.7, "to": 137.8, "kind": "amateur", "name": "2200 m amateur"},
     {"from": 148.5, "to": 283.5, "kind": "broadcast", "name": "long wave broadcast", "regions": [1]},
@@ -67,6 +67,17 @@
     {"from": 25670, "to": 26100, "kind": "broadcast", "name": "11 m broadcast"},
     {"from": 26100, "to": 26175, "kind": "maritime", "name": "maritime mobile"},
     {"from": 26965, "to": 27405, "kind": "cb", "name": "CB radio (11 m)"},
-    {"from": 28000, "to": 29700, "kind": "amateur", "name": "10 m amateur"}
+    {"from": 28000, "to": 29700, "kind": "amateur", "name": "10 m amateur"},
+
+    {"from": 6765, "to": 6795, "kind": "ism", "name": "ISM band (6.78 MHz)"},
+    {"from": 13553, "to": 13567, "kind": "ism", "name": "ISM band (13.56 MHz, HiFER beacons)"},
+    {"from": 27601.25, "to": 27991.25, "kind": "cb", "name": "UK CB (27/81, FM)", "regions": [1]},
+
+    {"from": 1610, "to": 1720, "kind": "informal", "name": "medium wave pirates", "regions": [1, 3]},
+    {"from": 3900, "to": 4000, "kind": "informal", "name": "75 m pirates (Europe)", "regions": [1]},
+    {"from": 6200, "to": 6400, "kind": "informal", "name": "48 m pirate band (Europe)", "regions": [1]},
+    {"from": 6800, "to": 7000, "kind": "informal", "name": "43 m pirate band (6925-6975 in North America)"},
+    {"from": 25615, "to": 26965, "kind": "informal", "name": "11 m freeband (unlicensed CB DX)"},
+    {"from": 27405, "to": 28000, "kind": "informal", "name": "11 m freeband (unlicensed CB DX)"}
   ]
 }

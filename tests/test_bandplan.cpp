@@ -17,10 +17,15 @@ private slots:
         QCOMPARE(plan.describe(7250, 2), QStringLiteral("40 m amateur"));   // Region 2 has 7000-7300
         QCOMPARE(plan.describe(7350, 2), QStringLiteral("41 m broadcast"));
         QCOMPARE(plan.describe(3600, 3), QStringLiteral("80 m amateur"));
-        QCOMPARE(plan.describe(3950, 1), QStringLiteral("75 m broadcast"));
+        QCOMPARE(plan.describe(3950, 1), QStringLiteral("75 m broadcast \u00b7 75 m pirates (Europe)"));
         QCOMPARE(plan.describe(3950, 2), QStringLiteral("80 m amateur"));
         QCOMPARE(plan.describe(10000, 1), QStringLiteral("standard frequency and time (10 MHz)"));
         QCOMPARE(plan.describe(8992, 1), QStringLiteral("aeronautical mobile"));
+        // informal uses come after the official allocation
+        QCOMPARE(plan.describe(6300, 1), QStringLiteral("maritime mobile \u00b7 48 m pirate band (Europe)"));
+        QCOMPARE(plan.describe(6300, 2), QStringLiteral("maritime mobile"));
+        QCOMPARE(plan.describe(27500, 2), QStringLiteral("11 m freeband (unlicensed CB DX)"));
+        QCOMPARE(plan.describe(13560, 1), QStringLiteral("ISM band (13.56 MHz, HiFER beacons)"));
         QCOMPARE(plan.describe(12577, 1), QStringLiteral("maritime mobile"));
         QCOMPARE(plan.describe(27185, 1), QStringLiteral("CB radio (11 m)"));
 

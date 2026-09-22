@@ -65,25 +65,22 @@ void AokiSource::fetchIndex()
 void AokiSource::fetchZip(const QUrl& url, const QString& season)
 {
     emit progress(tr("Checking Aoki %1 ...").arg(url.fileName()));
-    QNetworkReply* reply = get(url, storedLastModified(season));
-    connect(reply, &QNetworkReply::finished, this, [this, reply, season]() {
-        reply->deleteLater();
-        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        if (status == 304)
+    download(url, storedLastModified(season), [this, season](const Download& dl) {
+        if (dl.status == 304)
         {
             touchUpdated();
             finish(true, tr("Aoki %1 is up to date (%2 entries)").arg(season.toUpper()).arg(count()));
             return;
         }
-        if (reply->error() != QNetworkReply::NoError || status != 200)
+        if (dl.status != 200)
         {
             finish(false, tr("Aoki download failed: %1")
-                              .arg(status ? QString::number(status) : reply->errorString()));
+                              .arg(dl.status ? QString::number(dl.status) : dl.error));
             return;
         }
 
         QString zipError;
-        const QHash<QString, QByteArray> files = ZipReader::extractAll(reply->readAll(), &zipError);
+        const QHash<QString, QByteArray> files = ZipReader::extractAll(dl.data, &zipError);
         // "xta26.txt", never "userlist1.txt"
         const QString name = ZipReader::findName(
             files, QStringLiteral("^[a-z]{2}%1\\.txt$").arg(season));
@@ -99,7 +96,7 @@ void AokiSource::fetchZip(const QUrl& url, const QString& season)
             return;
         }
         emit progress(tr("Storing %1 Aoki entries ...").arg(parsed.entries.size()));
-        if (!store(season, parsed.entries, QString::fromLatin1(reply->rawHeader("Last-Modified"))))
+        if (!store(season, parsed.entries, dl.lastModified))
         {
             finish(false, tr("Database error: %1").arg(m_db->lastError()));
             return;

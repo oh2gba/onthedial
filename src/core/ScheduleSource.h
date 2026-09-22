@@ -7,6 +7,8 @@
 #include <QObject>
 #include <QUrl>
 
+#include <functional>
+
 class QNetworkAccessManager;
 class QNetworkReply;
 class StationDb;
@@ -37,6 +39,16 @@ public:
     bool isStale(int maxAgeDays) const;
     int count() const;
 
+    // Outcome of download(): status is the HTTP code (304 = unchanged, 200 =
+    // body in data), or 0 with error set when the server could not be reached.
+    struct Download
+    {
+        int status = 0;
+        QByteArray data;
+        QString lastModified;
+        QString error;
+    };
+
 public slots:
     // Starts the (asynchronous) refresh; emits finished() exactly once.
     virtual void update() = 0;
@@ -48,6 +60,13 @@ signals:
 protected:
     QNetworkReply* get(const QUrl& url, const QString& ifModifiedSince = QString());
     QNetworkReply* getFile(const QString& relativeName, const QString& ifModifiedSince = QString());
+    // Fetches a file the patient way: progress is reported while the body
+    // arrives, and when a slow server drops the connection halfway the
+    // rest is requested with a Range header, a few times if need be.
+    void download(const QUrl& url, const QString& ifModifiedSince,
+                  std::function<void(const Download&)> done);
+    void downloadFile(const QString& relativeName, const QString& ifModifiedSince,
+                      std::function<void(const Download&)> done);
     // Last-Modified we hold for the given season file, or empty when the
     // stored data is not for this season.
     QString storedLastModified(const QString& season) const;

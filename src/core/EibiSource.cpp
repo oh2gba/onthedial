@@ -22,38 +22,34 @@ void EibiSource::fetchSchedule(const QString& season, bool allowFallback)
 {
     const QString file = QStringLiteral("sked-%1.csv").arg(season);
     emit progress(tr("Checking EiBi %1 ...").arg(file));
-    QNetworkReply* reply = getFile(file, storedLastModified(season));
-    connect(reply, &QNetworkReply::finished, this, [this, reply, season, allowFallback]() {
-        reply->deleteLater();
-        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
-        if (status == 304)
+    downloadFile(file, storedLastModified(season), [this, season, allowFallback](const Download& dl) {
+        if (dl.status == 304)
         {
             touchUpdated();
             finish(true, tr("EiBi %1 is up to date (%2 entries)").arg(season.toUpper()).arg(count()));
             return;
         }
-        if (reply->error() != QNetworkReply::NoError || status != 200)
+        if (dl.status != 200)
         {
             // Around a season change the new file may not exist yet.
-            if (allowFallback && (status == 404 || status == 403))
+            if (allowFallback && (dl.status == 404 || dl.status == 403))
             {
                 fetchSchedule(EibiParser::previousSeason(season), false);
                 return;
             }
             finish(false, tr("EiBi download failed: %1")
-                              .arg(status ? QString::number(status) : reply->errorString()));
+                              .arg(dl.status ? QString::number(dl.status) : dl.error));
             return;
         }
 
-        const EibiParser::ParseResult parsed = EibiParser::parseCsv(reply->readAll());
+        const EibiParser::ParseResult parsed = EibiParser::parseCsv(dl.data);
         if (!parsed.error.isEmpty() || parsed.entries.size() < 100)
         {
             finish(false, tr("EiBi file unusable: %1").arg(parsed.error));
             return;
         }
         emit progress(tr("Storing %1 EiBi entries ...").arg(parsed.entries.size()));
-        if (!store(season, parsed.entries, QString::fromLatin1(reply->rawHeader("Last-Modified"))))
+        if (!store(season, parsed.entries, dl.lastModified))
         {
             finish(false, tr("Database error: %1").arg(m_db->lastError()));
             return;

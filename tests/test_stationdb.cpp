@@ -49,6 +49,12 @@ private slots:
         QCOMPARE(db.search("RUS").size(), 4);                       // ITU code match
         QCOMPARE(db.search("buzz", {"eibi"}).size(), 0);           // source excluded
         QCOMPARE(db.search("buzz", {"aoki"}).size(), 1);
+        QCOMPARE(db.search("buzz RUS").size(), 1);                  // every word must match
+        QCOMPARE(db.search("buzz meteo").size(), 0);
+        QCOMPARE(db.search("!buzz").size(), 3);                     // exclusion
+        QCOMPARE(db.search("RUS !buzz !meteo").size(), 2);
+        QCOMPARE(db.search("!").size(), 0);
+        QCOMPARE(db.search("  ").size(), 0);
         QCOMPARE(db.sourceCounts().size(), 1);
         QCOMPARE(db.sourceCounts().first().second, 4);
 

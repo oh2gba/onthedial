@@ -549,6 +549,7 @@ void MainWindow::updateHeader()
         else if (kind == QLatin1String("maritime")) colour = QStringLiteral("#56d4dd");
         else if (kind == QLatin1String("time"))     colour = QStringLiteral("#d2a8ff");
         else if (kind == QLatin1String("beacon"))   colour = QStringLiteral("#c9d1d9");
+        else if (kind == QLatin1String("informal")) colour = QStringLiteral("#ff7b72");
         else                                        colour = QStringLiteral("#ffa657");
     }
     m_bandLabel->setStyleSheet(colour.isEmpty() ? QStringLiteral("color: palette(mid);")
@@ -863,6 +864,9 @@ void MainWindow::onOnAirOnlyToggled(bool on)
     m_settings.onAirOnly = on;
     m_proxy->setOnAirOnly(on);
     updateCountLabel();
+    // the rows changed under the view: put the VFO back in the middle
+    centreOnMarker();
+    QTimer::singleShot(0, this, &MainWindow::centreOnMarker);
 }
 
 void MainWindow::onAlwaysOnTopToggled(bool on)

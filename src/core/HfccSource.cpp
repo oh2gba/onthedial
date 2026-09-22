@@ -24,31 +24,27 @@ void HfccSource::fetchZip(const QString& season, bool allowFallback)
 {
     const QString file = QStringLiteral("%1/%1allx2.zip").arg(season);
     emit progress(tr("Checking HFCC %1 ...").arg(file));
-    QNetworkReply* reply = getFile(file, storedLastModified(season));
-    connect(reply, &QNetworkReply::finished, this, [this, reply, season, allowFallback]() {
-        reply->deleteLater();
-        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
-        if (status == 304)
+    downloadFile(file, storedLastModified(season), [this, season, allowFallback](const Download& dl) {
+        if (dl.status == 304)
         {
             touchUpdated();
             finish(true, tr("HFCC %1 is up to date (%2 entries)").arg(season.toUpper()).arg(count()));
             return;
         }
-        if (reply->error() != QNetworkReply::NoError || status != 200)
+        if (dl.status != 200)
         {
-            if (allowFallback && (status == 404 || status == 403))
+            if (allowFallback && (dl.status == 404 || dl.status == 403))
             {
                 fetchZip(EibiParser::previousSeason(season), false);
                 return;
             }
             finish(false, tr("HFCC download failed: %1")
-                              .arg(status ? QString::number(status) : reply->errorString()));
+                              .arg(dl.status ? QString::number(dl.status) : dl.error));
             return;
         }
 
         QString zipError;
-        const QHash<QString, QByteArray> files = ZipReader::extractAll(reply->readAll(), &zipError);
+        const QHash<QString, QByteArray> files = ZipReader::extractAll(dl.data, &zipError);
         const QString skedName = ZipReader::findName(files, QStringLiteral("^[ab]\\d\\dall\\d\\d\\.txt$"));
         if (skedName.isEmpty())
         {
@@ -70,7 +66,7 @@ void HfccSource::fetchZip(const QString& season, bool allowFallback)
             return;
         }
         emit progress(tr("Storing %1 HFCC entries ...").arg(parsed.entries.size()));
-        if (!store(season, parsed.entries, QString::fromLatin1(reply->rawHeader("Last-Modified"))))
+        if (!store(season, parsed.entries, dl.lastModified))
         {
             finish(false, tr("Database error: %1").arg(m_db->lastError()));
             return;
