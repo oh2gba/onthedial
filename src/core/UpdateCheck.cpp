@@ -103,7 +103,11 @@ void UpdateCheck::run(const QUrl& endpoint, bool force)
     if (m_busy || !endpoint.isValid())
         return;
     const QDateTime last = lastCheck();
-    if (!force && last.isValid() && last.secsTo(QDateTime::currentDateTimeUtc()) < 24 * 3600)
+    // once a day, but a freshly installed version asks right away
+    const bool sameVersion = m_db->meta(QStringLiteral("update.checkedBy"))
+                             == QCoreApplication::applicationVersion();
+    if (!force && sameVersion && last.isValid()
+        && last.secsTo(QDateTime::currentDateTimeUtc()) < 24 * 3600)
     {
         emit finished(cached());
         return;
@@ -141,6 +145,7 @@ void UpdateCheck::run(const QUrl& endpoint, bool force)
         }
         m_db->setMeta(QStringLiteral("update.lastCheck"),
                       QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+        m_db->setMeta(QStringLiteral("update.checkedBy"), QCoreApplication::applicationVersion());
         m_db->setMeta(QStringLiteral("update.version"), r.latest);
         m_db->setMeta(QStringLiteral("update.url"), r.url);
         m_db->setMeta(QStringLiteral("update.message"), r.message);

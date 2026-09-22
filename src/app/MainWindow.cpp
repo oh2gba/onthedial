@@ -181,6 +181,12 @@ MainWindow::MainWindow(const QString& dataDir, double startKHz, QWidget* parent)
     applyLauncher();
     m_rig->start();
     QTimer::singleShot(3000, this, [this]() { startUpdateCheck(false); });
+    // and again every day while the program keeps running (the check
+    // itself skips when the last answer is younger than a day)
+    auto* daily = new QTimer(this);
+    daily->setInterval(60 * 60 * 1000);
+    connect(daily, &QTimer::timeout, this, [this]() { startUpdateCheck(false); });
+    daily->start();
 }
 
 void MainWindow::startUpdateCheck(bool force)
