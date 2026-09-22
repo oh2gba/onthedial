@@ -34,6 +34,9 @@
   <categories><category>HamRadio</category><category>Network</category></categories>
   <keywords><keyword>shortwave</keyword><keyword>SWL</keyword><keyword>rigctld</keyword><keyword>EiBi</keyword></keywords>
   <releases>
+    <release version="1.4.1" date="2026-09-22">
+      <description><p>Search results keep their order when a result is tuned: sorted on air first, then by frequency, and the list is not reloaded while the VFO moves.</p></description>
+    </release>
     <release version="1.4.0" date="2026-09-22">
       <description>
         <ul>

@@ -75,7 +75,8 @@ private:
     void scaleColumns(int width);
     void fitColumns();
     bool m_columnsFitted = false;
-    bool m_dialActive = false;    // the list is currently in dial order (no search text)
+    bool m_dialActive = false;
+    QString m_lastSearchKey;      // search text and sources of the list on screen    // the list is currently in dial order (no search text)
     void setupTable(QTableView* table);
     void updateToleranceHint();
     QModelIndex sourceIndex(const QModelIndex& proxyIndex) const;

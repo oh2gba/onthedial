@@ -52,6 +52,7 @@ public:
     void setPadding(int rows) { m_padding = rows; }
     bool isBlank(int row) const { return row >= 0 && row < m_rows.size() && m_rows[row].blank; }
     int entryCount() const;
+    bool isDialOrder() const { return m_dialOrder; }
     // dial view: rows this close to the VFO are highlighted
     void setHighlightKHz(double kHz);
     // briefly tint the row of this entry (0 clears); survives list reloads

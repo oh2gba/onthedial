@@ -579,11 +579,28 @@ void MainWindow::refreshLookup()
     const bool dial = m_dialAction->isChecked() && text.isEmpty() && m_centreKHz > 0.0;
     m_dialActive = dial;
     if (!text.isEmpty())
+    {
+        // the same search again, only the VFO moved: keep the list as it
+        // is and just update the distances, so tuning to a row does not
+        // reshuffle the results
+        const QString key = text + QLatin1Char('\n') + enabledSources().join(QLatin1Char(','));
+        if (key == m_lastSearchKey && !m_model->isDialOrder())
+        {
+            m_model->setCentre(m_centreKHz);
+            updateCountLabel();
+            return;
+        }
+        m_lastSearchKey = key;
         list = m_db->search(text, enabledSources());
-    else if (dial)
-        list = m_db->around(m_centreKHz, 300, enabledSources());
-    else if (m_centreKHz > 0.0)
-        list = m_db->lookup(m_centreKHz, m_tolerance->value(), enabledSources());
+    }
+    else
+    {
+        m_lastSearchKey.clear();
+        if (dial)
+            list = m_db->around(m_centreKHz, 300, enabledSources());
+        else if (m_centreKHz > 0.0)
+            list = m_db->lookup(m_centreKHz, m_tolerance->value(), enabledSources());
+    }
 
     if (dial)
     {
@@ -688,6 +705,7 @@ void MainWindow::addMyStation()
     StationEntry fresh = dlg.entry();
     if (!m_db->insertEntry(fresh))
         QMessageBox::warning(this, tr("My stations"), m_db->lastError());
+    m_lastSearchKey.clear();   // the data changed: search again
     refreshLookup();
 }
 
@@ -695,6 +713,7 @@ void MainWindow::openMyStations()
 {
     MyStationsDialog dlg(m_db, m_centreKHz, m_rigConnected ? m_rigMode : QString(), this);
     dlg.exec();
+    m_lastSearchKey.clear();   // the data changed: search again
     refreshLookup();
 }
 
@@ -727,6 +746,7 @@ void MainWindow::tableContextMenu(const QPoint& pos)
                 if (dlg.exec() == QDialog::Accepted)
                 {
                     m_db->updateEntry(dlg.entry());
+                    m_lastSearchKey.clear();   // the data changed: search again
                     refreshLookup();
                 }
             });
@@ -736,6 +756,7 @@ void MainWindow::tableContextMenu(const QPoint& pos)
                     == QMessageBox::Yes)
                 {
                     m_db->removeEntry(e.id);
+                    m_lastSearchKey.clear();   // the data changed: search again
                     refreshLookup();
                 }
             });
@@ -755,6 +776,7 @@ void MainWindow::tableContextMenu(const QPoint& pos)
                 {
                     StationEntry fresh = dlg.entry();
                     m_db->insertEntry(fresh);
+                    m_lastSearchKey.clear();   // the data changed: search again
                     refreshLookup();
                 }
             });
@@ -892,7 +914,10 @@ void MainWindow::onUpdateFinished(bool ok, const QString& message)
     statusBar()->showMessage(message, ok ? 15000 : 0);
     updateDbStatus();
     if (ok)
+    {
+        m_lastSearchKey.clear();   // the data changed: search again
         refreshLookup();
+    }
     else if (m_db->count() == 0)
         QMessageBox::warning(this, tr("Database update failed"),
                              tr("%1\n\nYou can retry from File > Update databases now.").arg(message));
@@ -937,6 +962,7 @@ void MainWindow::openSettings()
         applyLauncher();
     updateHeader();
     updateDbStatus();
+    m_lastSearchKey.clear();   // the data changed: search again
     refreshLookup();
     if (m_updater->anyStale(m_settings.refreshDays))
         updateDatabases();

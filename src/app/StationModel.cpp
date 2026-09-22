@@ -204,13 +204,14 @@ void StationModel::sortRows()
         shadeGroups();
         return;
     }
+    // on air first, then by frequency: an order that does not change
+    // when the VFO moves, so tuning to a search result keeps the list still
     std::stable_sort(m_rows.begin(), m_rows.end(), [](const Row& a, const Row& b) {
         const int ra = rank(a.status), rb = rank(b.status);
         if (ra != rb)
             return ra < rb;
-        const double da = qAbs(a.delta), db = qAbs(b.delta);
-        if (!qFuzzyCompare(da + 1.0, db + 1.0))
-            return da < db;
+        if (!qFuzzyCompare(a.entry.kHz + 1.0, b.entry.kHz + 1.0))
+            return a.entry.kHz < b.entry.kHz;
         if (a.entry.startMin != b.entry.startMin)
             return a.entry.startMin < b.entry.startMin;
         return a.entry.station < b.entry.station;
