@@ -89,7 +89,7 @@ MainWindow::MainWindow(const QString& dataDir, double startKHz, QWidget* parent)
     m_updater->addSource(new EibiSource(m_db, m_nam, this));
     m_updater->addSource(new HfccSource(m_db, m_nam, this));
     m_updater->addSource(new AokiSource(m_db, m_nam, this));
-    m_updateCheck = new UpdateCheck(m_db, m_nam, this);
+    m_updateCheck = new UpdateCheck(m_nam, this);
     connect(m_updateCheck, &UpdateCheck::finished, this, &MainWindow::showUpdateResult);
     m_rig = new RigClient(this);
     m_launcher = new RigctldLauncher(this);
@@ -180,30 +180,29 @@ MainWindow::MainWindow(const QString& dataDir, double startKHz, QWidget* parent)
 
     applyLauncher();
     m_rig->start();
-    QTimer::singleShot(3000, this, [this]() { startUpdateCheck(false); });
-    // and again every day while the program keeps running (the check
-    // itself skips when the last answer is younger than a day)
+    // ask once after start, then every 24 hours while the program runs
+    QTimer::singleShot(3000, this, &MainWindow::startUpdateCheck);
     auto* daily = new QTimer(this);
-    daily->setInterval(60 * 60 * 1000);
-    connect(daily, &QTimer::timeout, this, [this]() { startUpdateCheck(false); });
+    daily->setInterval(24 * 60 * 60 * 1000);
+    connect(daily, &QTimer::timeout, this, &MainWindow::startUpdateCheck);
     daily->start();
 }
 
-void MainWindow::startUpdateCheck(bool force)
+void MainWindow::startUpdateCheck()
 {
     if (!m_settings.updateCheck)
     {
-        m_updateLabel->clear();
+        m_updateLabel->hide();
         return;
     }
-    m_updateCheck->run(QUrl(m_settings.updateUrl), force);
+    m_updateCheck->run(QUrl(m_settings.updateUrl));
 }
 
 void MainWindow::showUpdateResult(const UpdateCheck::Result& r)
 {
     if (!r.valid)
     {
-        m_updateLabel->clear();
+        m_updateLabel->hide();
         return;
     }
     QString text;
@@ -213,12 +212,13 @@ void MainWindow::showUpdateResult(const UpdateCheck::Result& r)
         text += (text.isEmpty() ? QString() : QStringLiteral(" · ")) + r.message.toHtmlEscaped();
     if (text.isEmpty())
     {
-        m_updateLabel->clear();
+        m_updateLabel->hide();
         return;
     }
     if (!r.url.isEmpty())
         text = QStringLiteral("<a href=\"%1\">%2</a>").arg(r.url.toHtmlEscaped(), text);
     m_updateLabel->setText(text);
+    m_updateLabel->show();
     m_updateLabel->setToolTip(r.newer ? tr("You are running %1. Click to open the download page.")
                                             .arg(QCoreApplication::applicationVersion())
                                       : QString());
@@ -269,7 +269,7 @@ void MainWindow::buildUi()
             return;
         }
         statusBar()->showMessage(tr("Checking for a new version ..."), 5000);
-        startUpdateCheck(true);
+        startUpdateCheck();
     });
     file->addAction(tr("&Settings..."), this, &MainWindow::openSettings);
     file->addSeparator();
@@ -326,6 +326,18 @@ void MainWindow::buildUi()
     m_clockLabel->setFont(mid);
     m_clockLabel->setToolTip(tr("Current UTC time; schedules are evaluated against it"));
 
+    // a small link above the clock when a newer version exists
+    m_updateLabel = new QLabel;
+    m_updateLabel->setOpenExternalLinks(true);
+    m_updateLabel->setTextFormat(Qt::RichText);
+    m_updateLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_updateLabel->hide();
+    auto* clockBox = new QVBoxLayout;
+    clockBox->setContentsMargins(0, 0, 0, 0);
+    clockBox->setSpacing(0);
+    clockBox->addWidget(m_updateLabel, 0, Qt::AlignRight);
+    clockBox->addWidget(m_clockLabel, 0, Qt::AlignRight);
+
     auto* header = new QHBoxLayout;
     header->addWidget(m_freqLabel);
     header->addSpacing(12);
@@ -333,7 +345,7 @@ void MainWindow::buildUi()
     header->addSpacing(18);
     header->addWidget(m_bandLabel);
     header->addStretch();
-    header->addWidget(m_clockLabel);
+    header->addLayout(clockBox);
 
     // --- controls -----------------------------------------------------
     m_followRig = new QCheckBox(tr("Follow rig"));
@@ -419,11 +431,7 @@ void MainWindow::buildUi()
     // --- status bar ---------------------------------------------------
     m_rigStatus = new QLabel;
     m_dbStatus = new QLabel;
-    m_updateLabel = new QLabel;
-    m_updateLabel->setOpenExternalLinks(true);
-    m_updateLabel->setTextFormat(Qt::RichText);
     statusBar()->addWidget(m_rigStatus, 1);
-    statusBar()->addPermanentWidget(m_updateLabel);
     statusBar()->addPermanentWidget(m_dbStatus);
 
     resize(1400, 760);
@@ -929,7 +937,7 @@ void MainWindow::openSettings()
     if (m_updater->anyStale(m_settings.refreshDays))
         updateDatabases();
     if (updateChanged)
-        startUpdateCheck(true);
+        startUpdateCheck();
 }
 
 void MainWindow::tick()

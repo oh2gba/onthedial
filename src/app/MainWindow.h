@@ -61,7 +61,7 @@ private:
     void buildUi();
     void applySettings();
     void applyLauncher();
-    void startUpdateCheck(bool force);
+    void startUpdateCheck();
     void showUpdateResult(const UpdateCheck::Result& r);
     void setCentreKHz(double kHz, bool fromRig);
     void refreshLookup();

@@ -55,7 +55,7 @@ How to hook up the radio: <https://onthedial.oh2gba.eu/rig.html>
   Refresh requests use `If-Modified-Since`, so an unchanged file costs a single
   tiny 304 response.
 - Once a day the program asks the project page for the current version and shows a small
-  note in the status bar when a newer one exists. The request carries only the program's
+  link above the clock when a newer one exists. The request carries only the program's
   version and platform; the server counts these calls per day, version and platform and
   keeps no addresses or other data. File → Settings switches the check off.
 - Everything, including settings, window size and column layout, lives in one SQLite

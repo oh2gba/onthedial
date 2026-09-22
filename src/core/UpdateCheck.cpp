@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "UpdateCheck.h"
-#include "StationDb.h"
 
 #include <QCoreApplication>
 #include <QJsonDocument>
@@ -12,9 +11,8 @@
 #include <QSysInfo>
 #include <QUrlQuery>
 
-UpdateCheck::UpdateCheck(StationDb* db, QNetworkAccessManager* nam, QObject* parent)
+UpdateCheck::UpdateCheck(QNetworkAccessManager* nam, QObject* parent)
     : QObject(parent)
-    , m_db(db)
     , m_nam(nam)
 {
 }
@@ -82,36 +80,10 @@ UpdateCheck::Result UpdateCheck::parseResponse(const QByteArray& json, const QSt
     return r;
 }
 
-UpdateCheck::Result UpdateCheck::cached() const
-{
-    Result r;
-    r.latest = m_db->meta(QStringLiteral("update.version"));
-    r.url = m_db->meta(QStringLiteral("update.url"));
-    r.message = m_db->meta(QStringLiteral("update.message"));
-    r.valid = !r.latest.isEmpty();
-    r.newer = r.valid && compareVersions(r.latest, QCoreApplication::applicationVersion()) > 0;
-    return r;
-}
-
-QDateTime UpdateCheck::lastCheck() const
-{
-    return QDateTime::fromString(m_db->meta(QStringLiteral("update.lastCheck")), Qt::ISODate);
-}
-
-void UpdateCheck::run(const QUrl& endpoint, bool force)
+void UpdateCheck::run(const QUrl& endpoint)
 {
     if (m_busy || !endpoint.isValid())
         return;
-    const QDateTime last = lastCheck();
-    // once a day, but a freshly installed version asks right away
-    const bool sameVersion = m_db->meta(QStringLiteral("update.checkedBy"))
-                             == QCoreApplication::applicationVersion();
-    if (!force && sameVersion && last.isValid()
-        && last.secsTo(QDateTime::currentDateTimeUtc()) < 24 * 3600)
-    {
-        emit finished(cached());
-        return;
-    }
 
     QUrl url = endpoint;
     QUrlQuery q(url);
@@ -134,21 +106,9 @@ void UpdateCheck::run(const QUrl& endpoint, bool force)
         m_busy = false;
         if (reply->error() != QNetworkReply::NoError)
         {
-            emit finished(cached());   // keep whatever we knew; try again next day
+            emit finished(Result());   // dead link or no network: never mind
             return;
         }
-        const Result r = parseResponse(reply->readAll(), QCoreApplication::applicationVersion());
-        if (!r.valid)
-        {
-            emit finished(cached());
-            return;
-        }
-        m_db->setMeta(QStringLiteral("update.lastCheck"),
-                      QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
-        m_db->setMeta(QStringLiteral("update.checkedBy"), QCoreApplication::applicationVersion());
-        m_db->setMeta(QStringLiteral("update.version"), r.latest);
-        m_db->setMeta(QStringLiteral("update.url"), r.url);
-        m_db->setMeta(QStringLiteral("update.message"), r.message);
-        emit finished(r);
+        emit finished(parseResponse(reply->readAll(), QCoreApplication::applicationVersion()));
     });
 }
